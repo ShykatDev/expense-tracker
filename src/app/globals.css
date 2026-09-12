@@ -143,6 +143,17 @@
     -webkit-backdrop-filter: blur(24px) saturate(140%);
   }
 
+  /*
+   * No backdrop-filter here on purpose: this is used on fixed/sticky
+   * elements (navbar, bottom action bar). backdrop-filter forces iOS
+   * Safari to resample everything behind it on every scroll/keyboard
+   * frame, which tanks scroll and typing performance. A solid tinted
+   * panel gets a similar dark "floating bar" look at near-zero cost.
+   */
+  .solid-panel {
+    background-color: rgba(14, 14, 16, 0.92);
+  }
+
   .glass-glow::before {
     content: "";
     position: absolute;

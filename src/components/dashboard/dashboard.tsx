@@ -172,8 +172,8 @@ export function Dashboard() {
         onSave={updateTransaction}
       />
 
-      <div className="fixed inset-x-0 bottom-0 z-30 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:px-8 md:px-16 lg:px-24 xl:px-32 2xl:px-48">
-        <section className="glass mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-white/10 p-3 shadow-[0_1px_0_0_rgba(255,255,255,0.08)_inset,0_8px_30px_-8px_rgba(0,0,0,0.6)]">
+      <div className="fixed inset-x-0 bottom-0 z-30 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 md:px-16 lg:px-24 xl:px-32 2xl:px-48">
+        <section className="solid-panel mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-white/10 p-3 shadow-[0_1px_0_0_rgba(255,255,255,0.08)_inset,0_8px_30px_-8px_rgba(0,0,0,0.6)]">
           <BalanceTrend balance={totals.balance} changePercent={balanceChangePercent} />
           <div className="flex shrink-0 gap-2">
             <IncomeDrawer

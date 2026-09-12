@@ -130,7 +130,7 @@ export function IncomeDrawer({
           </DrawerDescription>
         </DrawerHeader>
         <div className="flex flex-col gap-5 overflow-y-auto px-6 pb-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
             {INCOME_CATEGORIES.map((category) => {
               const isSelected = category.key in amounts;
               return (
@@ -139,13 +139,13 @@ export function IncomeDrawer({
                   type="button"
                   onClick={() => toggleCategory(category.key)}
                   className={cn(
-                    "flex flex-col items-center gap-1.5 rounded-xl border p-3.5 text-xs font-medium transition-all duration-200 active:scale-95",
+                    "flex flex-col items-center gap-2 rounded-xl border p-5 text-sm font-medium transition-all duration-200 active:scale-95",
                     isSelected
                       ? "border-white/20 bg-white/10 text-foreground"
                       : "border-white/10 bg-white/3 text-muted-foreground hover:border-white/15 hover:bg-white/5 hover:text-foreground",
                   )}
                 >
-                  <category.icon className="size-5" />
+                  <category.icon className="size-6" />
                   <span className="text-center leading-tight">
                     {category.label}
                   </span>
@@ -159,13 +159,13 @@ export function IncomeDrawer({
               {selectedCategories.map((category) => (
                 <div
                   key={category.key}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 animate-in fade-in slide-in-from-top-1 duration-200"
+                  className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
                 >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10">
-                    <category.icon className="size-4.5 text-foreground" />
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10">
+                    <category.icon className="size-5 text-foreground" />
                   </div>
                   <div className="flex-1">
-                    <Label className="text-xs text-muted-foreground">
+                    <Label className="text-sm text-muted-foreground">
                       {category.label}
                     </Label>
                     <Input
@@ -176,7 +176,7 @@ export function IncomeDrawer({
                       value={amounts[category.key]}
                       onChange={(e) => updateAmount(category.key, e.target.value)}
                       placeholder="0"
-                      className="h-9 border-0 bg-transparent py-0 pr-0 pl-2 text-xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
+                      className="h-11 border-0 bg-transparent py-0 pr-0 pl-2 text-2xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
                     />
                   </div>
                   <Button
@@ -193,10 +193,10 @@ export function IncomeDrawer({
               {customRows.map((row) => (
                 <div
                   key={row.id}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 animate-in fade-in slide-in-from-top-1 duration-200"
+                  className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
                 >
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10">
-                    <Plus className="size-4.5 text-foreground" />
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10">
+                    <Plus className="size-5 text-foreground" />
                   </div>
                   <div className="flex-1 space-y-1">
                     <Input
@@ -204,7 +204,7 @@ export function IncomeDrawer({
                       value={row.label}
                       onChange={(e) => updateCustomRow(row.id, { label: e.target.value })}
                       placeholder="Source name"
-                      className="h-6 border-0 bg-transparent py-0 pr-0 pl-2 text-xs text-muted-foreground shadow-none focus-visible:ring-0"
+                      className="h-7 border-0 bg-transparent py-0 pr-0 pl-2 text-sm text-muted-foreground shadow-none focus-visible:ring-0"
                     />
                     <Input
                       type="number"
@@ -213,7 +213,7 @@ export function IncomeDrawer({
                       value={row.amount}
                       onChange={(e) => updateCustomRow(row.id, { amount: e.target.value })}
                       placeholder="0"
-                      className="h-9 border-0 bg-transparent py-0 pr-0 pl-2 text-xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
+                      className="h-11 border-0 bg-transparent py-0 pr-0 pl-2 text-2xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
                     />
                   </div>
                   <Button
