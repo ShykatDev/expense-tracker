@@ -16,7 +16,6 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { EXPENSE_CATEGORIES, OTHER_CATEGORY_LABEL } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
@@ -69,7 +68,10 @@ export function ExpenseDrawer({
     setCustomRows((prev) => prev.filter((row) => row.id !== id));
   }
 
-  function updateCustomRow(id: string, patch: Partial<Pick<CustomRow, "label" | "amount">>) {
+  function updateCustomRow(
+    id: string,
+    patch: Partial<Pick<CustomRow, "label" | "amount">>,
+  ) {
     setCustomRows((prev) =>
       prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
     );
@@ -129,7 +131,7 @@ export function ExpenseDrawer({
             Pick a category, then enter the amount.
           </DrawerDescription>
         </DrawerHeader>
-        <div className="flex flex-col gap-5 overflow-y-auto px-6 pb-4">
+        <div className="flex flex-col mt-4 gap-5 overflow-y-auto px-6 pb-4">
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
             {EXPENSE_CATEGORIES.map((category) => {
               const isSelected = category.key in amounts;
@@ -165,22 +167,24 @@ export function ExpenseDrawer({
                     <category.icon className="size-5 text-foreground" />
                   </div>
                   <div className="flex-1">
-                    <Label className="text-sm text-muted-foreground">
+                    {/* <Label className="text-sm text-muted-foreground">
                       {category.label}
-                    </Label>
+                    </Label> */}
                     <Input
                       type="number"
                       inputMode="decimal"
                       min={0}
                       autoFocus
                       value={amounts[category.key]}
-                      onChange={(e) => updateAmount(category.key, e.target.value)}
+                      onChange={(e) =>
+                        updateAmount(category.key, e.target.value)
+                      }
                       placeholder="0"
-                      className="h-11 border-0 bg-transparent py-0 pr-0 pl-2 text-2xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
+                      className="h-12 border-0 bg-transparent py-0 pr-0 pl-2 text-2xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
                     />
                   </div>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     className="shrink-0"
                     onClick={() => toggleCategory(category.key)}
@@ -202,7 +206,9 @@ export function ExpenseDrawer({
                     <Input
                       autoFocus
                       value={row.label}
-                      onChange={(e) => updateCustomRow(row.id, { label: e.target.value })}
+                      onChange={(e) =>
+                        updateCustomRow(row.id, { label: e.target.value })
+                      }
                       placeholder="Source name"
                       className="h-7 border-0 bg-transparent py-0 pr-0 pl-2 text-sm text-muted-foreground shadow-none focus-visible:ring-0"
                     />
@@ -211,13 +217,15 @@ export function ExpenseDrawer({
                       inputMode="decimal"
                       min={0}
                       value={row.amount}
-                      onChange={(e) => updateCustomRow(row.id, { amount: e.target.value })}
+                      onChange={(e) =>
+                        updateCustomRow(row.id, { amount: e.target.value })
+                      }
                       placeholder="0"
                       className="h-11 border-0 bg-transparent py-0 pr-0 pl-2 text-2xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
                     />
                   </div>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     className="shrink-0"
                     onClick={() => removeCustomRow(row.id)}
@@ -230,6 +238,7 @@ export function ExpenseDrawer({
           )}
 
           <Button
+            size="lg"
             variant="outline"
             className="gap-2 border-dashed"
             onClick={addCustomRow}
@@ -239,7 +248,7 @@ export function ExpenseDrawer({
           </Button>
         </div>
         <DrawerFooter>
-          <Button className="gap-2" onClick={handleSubmit}>
+          <Button size="lg" className="gap-2" onClick={handleSubmit}>
             <Check className="size-4" />
             Save expense
           </Button>

@@ -3,6 +3,7 @@
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 
 import { formatCurrency } from "@/lib/transactions";
+import { cn } from "@/lib/utils";
 
 export function BalanceTrend({
   balance,
@@ -21,7 +22,12 @@ export function BalanceTrend({
       </div>
       <div className="flex min-w-0 flex-col">
         <span className="text-[11px] text-muted-foreground">Balance</span>
-        <span className="truncate text-sm font-semibold tabular-nums">
+        <span
+          className={cn(
+            "truncate text-sm font-semibold tabular-nums",
+            balance < 0 ? "text-rose-400" : "text-foreground",
+          )}
+        >
           {formatCurrency(balance)}
         </span>
       </div>

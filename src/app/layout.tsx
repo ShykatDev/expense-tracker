@@ -46,7 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="absolute bottom-0 left-1/4 size-80 rounded-full bg-white/6 blur-2xl" />
         </div>
         {children}
-        <Toaster theme="dark" />
+        <Toaster theme="dark" position="top-center" offset={{ top: 80 }} />
       </body>
     </html>
   );

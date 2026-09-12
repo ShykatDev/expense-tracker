@@ -36,7 +36,12 @@ export function BalanceOverviewCard({
         <Wallet className="size-4 text-muted-foreground" />
       </CardHeader>
       <CardContent className="flex items-end justify-between gap-3 px-5">
-        <p className="text-3xl font-semibold tracking-tight tabular-nums text-foreground">
+        <p
+          className={cn(
+            "text-3xl font-semibold tracking-tight tabular-nums",
+            balance < 0 ? "text-rose-400" : "text-foreground",
+          )}
+        >
           {formatCurrency(balance)}
         </p>
         {insight && (
