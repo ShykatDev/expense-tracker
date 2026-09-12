@@ -15,9 +15,9 @@ export function BalanceTrend({
     !changePercent ? Minus : changePercent > 0 ? TrendingUp : TrendingDown;
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-3">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10">
-        <Icon className="size-4 text-foreground" />
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/10">
+        <Icon className="size-3.5 text-foreground" />
       </div>
       <div className="flex min-w-0 flex-col">
         <span className="text-[11px] text-muted-foreground">Balance</span>

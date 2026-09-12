@@ -115,12 +115,12 @@ export function ExpenseDrawer({
           <Button
             size="sm"
             aria-label="Add expense"
-            className="h-10 gap-2 border-rose-500/25 bg-rose-500/15 px-3 text-rose-400 active:scale-[0.98] hover:bg-rose-500/25 sm:px-4"
+            className="h-10 gap-1 border-rose-500/25 bg-rose-500/15 px-2.5 text-rose-400 active:scale-[0.98] hover:bg-rose-500/25"
           />
         }
       >
-        <ArrowDownRight className="size-5" />
-        <span className="hidden sm:inline">Expense</span>
+        <ArrowDownRight className="size-4" />
+        Expense
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>

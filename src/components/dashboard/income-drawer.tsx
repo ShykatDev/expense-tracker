@@ -115,12 +115,12 @@ export function IncomeDrawer({
           <Button
             size="sm"
             aria-label="Add income"
-            className="h-10 gap-2 border-emerald-500/25 bg-emerald-500/15 px-3 text-emerald-400 active:scale-[0.98] hover:bg-emerald-500/25 sm:px-4"
+            className="h-10 gap-1 border-emerald-500/25 bg-emerald-500/15 px-2.5 text-emerald-400 active:scale-[0.98] hover:bg-emerald-500/25"
           />
         }
       >
-        <ArrowUpRight className="size-5" />
-        <span className="hidden sm:inline">Income</span>
+        <ArrowUpRight className="size-4" />
+        Income
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
