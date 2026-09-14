@@ -3,6 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 
+import { useCategoryVisibility } from "@/hooks/use-category-visibility";
 import { useTransactions } from "@/hooks/use-transactions";
 import {
   computeCategoryTotals,
@@ -35,6 +36,7 @@ export function Dashboard() {
     removeTransaction,
     updateTransaction,
   } = useTransactions();
+  const { hidden: hiddenCategories, toggleCategory } = useCategoryVisibility();
   const [filter, setFilter] = React.useState<DateRangeFilter>("month");
   const [monthOffset, setMonthOffset] = React.useState(0);
   const [view, setView] = React.useState<DashboardView>("overview");
@@ -139,6 +141,8 @@ export function Dashboard() {
           monthLabel={monthLabel}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
+          hiddenCategories={hiddenCategories}
+          onToggleCategory={toggleCategory}
         />
 
         <header className="flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -198,6 +202,7 @@ export function Dashboard() {
                   entries.map((entry) => ({ ...entry, type: "income" })),
                 )
               }
+              hiddenCategories={hiddenCategories.income}
             />
             <ExpenseDrawer
               onSubmit={(entries) =>
@@ -205,6 +210,7 @@ export function Dashboard() {
                   entries.map((entry) => ({ ...entry, type: "expense" })),
                 )
               }
+              hiddenCategories={hiddenCategories.expense}
             />
           </div>
         </section>

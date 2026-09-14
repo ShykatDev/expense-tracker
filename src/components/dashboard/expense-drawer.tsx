@@ -27,12 +27,22 @@ interface CustomRow {
 
 export function ExpenseDrawer({
   onSubmit,
+  hiddenCategories = [],
 }: {
   onSubmit: (entries: { category: string; amount: number }[]) => void;
+  hiddenCategories?: string[];
 }) {
   const [open, setOpen] = React.useState(false);
   const [amounts, setAmounts] = React.useState<Record<string, string>>({});
   const [customRows, setCustomRows] = React.useState<CustomRow[]>([]);
+
+  const visibleCategories = React.useMemo(
+    () =>
+      EXPENSE_CATEGORIES.filter(
+        (category) => !hiddenCategories.includes(category.key),
+      ),
+    [hiddenCategories],
+  );
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
@@ -78,7 +88,7 @@ export function ExpenseDrawer({
   }
 
   function handleSubmit() {
-    const categoryEntries = EXPENSE_CATEGORIES.filter(
+    const categoryEntries = visibleCategories.filter(
       (category) => category.key in amounts,
     ).map((category) => ({
       category: category.label,
@@ -106,7 +116,7 @@ export function ExpenseDrawer({
     handleOpenChange(false);
   }
 
-  const selectedCategories = EXPENSE_CATEGORIES.filter(
+  const selectedCategories = visibleCategories.filter(
     (category) => category.key in amounts,
   );
 
@@ -133,7 +143,7 @@ export function ExpenseDrawer({
         </DrawerHeader>
         <div className="flex flex-col mt-4 gap-5 overflow-y-auto px-6 pb-4">
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-            {EXPENSE_CATEGORIES.map((category) => {
+            {visibleCategories.map((category) => {
               const isSelected = category.key in amounts;
               return (
                 <button

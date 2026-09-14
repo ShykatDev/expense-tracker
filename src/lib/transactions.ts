@@ -54,6 +54,9 @@ export const INCOME_CATEGORIES: CategoryOption[] = [
 
 export const OTHER_CATEGORY_LABEL = "Other";
 
+export const CATEGORY_VISIBILITY_STORAGE_KEY =
+  "expense-tracker:hidden-categories";
+
 export function getCategoryIcon(
   type: TransactionType,
   category: string,
