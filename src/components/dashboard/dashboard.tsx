@@ -13,7 +13,6 @@ import {
   type Transaction,
 } from "@/lib/transactions";
 import { SheetButton, SheetSection } from "@/components/layout/app-shell";
-import { TRANSITION } from "@/components/layout/page-transition";
 import { getSavingsVerdict } from "@/lib/savings";
 import { monthKey } from "@/lib/targets";
 
@@ -283,9 +282,7 @@ function DashboardContent({
                 transactions={recentTransactions}
                 customCategories={allCustomCategories}
                 onEdit={(transaction) =>
-                  router.push(`/transaction?edit=${transaction.id}`, {
-                    transitionTypes: [...TRANSITION.sheetUp],
-                  })
+                  router.push(`/transaction?edit=${transaction.id}`)
                 }
                 onDelete={setDeletingTransaction}
                 emptyMessage="No transactions this month yet."

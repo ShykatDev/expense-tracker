@@ -8,6 +8,7 @@ import {
   GOALS_STORAGE_KEY,
   GOAL_COMPLETIONS_STORAGE_KEY,
 } from "@/lib/transactions";
+import { createId } from "@/lib/id"
 
 function sanitizeGoals(parsed: unknown): Goal[] {
   if (!Array.isArray(parsed)) return [];
@@ -130,7 +131,7 @@ export function useGoals() {
     }) => {
       const now = Date.now()
       const goal: Goal = {
-        id: crypto.randomUUID(),
+        id: createId(),
         label: label.trim(),
         targetAmount,
         iconKey: iconKey || undefined,
@@ -191,7 +192,7 @@ export function useGoals() {
       transactionId?: string
     }) => {
       const completion: GoalCompletion = {
-        id: crypto.randomUUID(),
+        id: createId(),
         goalId,
         source,
         amount,

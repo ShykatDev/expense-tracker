@@ -205,8 +205,6 @@ export function ExpandableSheet({
   return (
     <div
       ref={rootRef}
-      // The sheet runs its own touch and wheel gestures, so Lenis stays out.
-      data-lenis-prevent
       className="reveal-target relative h-dvh overflow-hidden overscroll-none bg-black md:h-[calc(100dvh-3rem)] md:rounded-[2rem] md:border md:border-white/10"
       style={{ "--sheet-p": 0 } as React.CSSProperties}
     >

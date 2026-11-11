@@ -1,4 +1,3 @@
-import { PageTransition } from "@/components/layout/page-transition";
 import { TransactionEntry } from "@/components/transaction/transaction-entry";
 import type { Metadata, Viewport } from "next";
 
@@ -17,9 +16,5 @@ export const metadata: Metadata = {
 };
 
 export default function TransactionPage() {
-  return (
-    <PageTransition>
-      <TransactionEntry />
-    </PageTransition>
-  );
+  return <TransactionEntry />;
 }

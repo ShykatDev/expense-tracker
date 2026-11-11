@@ -4,10 +4,8 @@ import { TransactionsProvider } from "@/components/dashboard/transactions-provid
 import { GoalsProvider } from "@/components/goals/goals-provider";
 import { TargetsProvider } from "@/components/targets/targets-provider";
 import { AppToaster } from "@/components/brand/app-toaster";
-import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Noto_Sans_Bengali } from "next/font/google";
-import "lenis/dist/lenis.css";
 import "./globals.css";
 
 /*
@@ -80,9 +78,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <TransactionsProvider>
             <SplashScreen />
             <TargetsProvider>
-              <GoalsProvider>
-                <SmoothScroll>{children}</SmoothScroll>
-              </GoalsProvider>
+              <GoalsProvider>{children}</GoalsProvider>
             </TargetsProvider>
           </TransactionsProvider>
         </CategoriesProvider>

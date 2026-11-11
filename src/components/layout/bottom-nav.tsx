@@ -4,7 +4,6 @@ import { History, House, Settings, Tags, Target, type LucideIcon } from "lucide-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { TRANSITION } from "@/components/layout/page-transition";
 import { cn } from "@/lib/utils";
 
 interface Route {
@@ -38,10 +37,7 @@ const GAP = 4;
  * one on navigation with a springy overshoot, squishing as it travels, and
  * the newly active icon pops. Every slot is the same width, so the glide is
  * a plain translate.
- *
- * Each link tags its navigation as moving right or left of the current tab,
- * which `PageTransition` turns into a matching slide. The pill is named for
- * view transitions so it stays put while pages slide beneath it.
+
  */
 export function BottomNav() {
   const pathname = usePathname();
@@ -52,17 +48,15 @@ export function BottomNav() {
       aria-label="Main"
       className="reveal-nav pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4"
     >
-      {/*
-        The view-transition name sits on the pill itself, not the <nav>: an
-        ancestor with a view-transition-name becomes a "backdrop root", which
-        would leave the blur nothing behind it to blur.
-      */}
       <ul
         className="pointer-events-auto relative flex items-center rounded-full bg-[#1a1b20]/40 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-white/12 backdrop-blur-xl backdrop-saturate-[1.8]"
         style={{
           gap: GAP,
-          viewTransitionName: "bottom-nav",
           WebkitBackdropFilter: "blur(24px) saturate(1.8)",
+          // Its own compositing layer, so iOS keeps the fixed bar pinned while
+          // the page scrolls. It lives on the pill, not the <nav>: a transform
+          // on an ancestor would cut the backdrop blur off from the page.
+          transform: "translateZ(0)",
         }}
       >
         {/* The gliding highlight: it springs past its target and settles
@@ -87,19 +81,12 @@ export function BottomNav() {
 
         {ROUTES.map((route, index) => {
           const isActive = index === currentIndex;
-          const direction =
-            currentIndex === -1 || index === currentIndex
-              ? undefined
-              : index > currentIndex
-                ? [...TRANSITION.tabForward]
-                : [...TRANSITION.tabBack];
           const Icon = route.icon;
 
           return (
             <li key={route.href} className="relative">
               <Link
                 href={route.href}
-                transitionTypes={direction}
                 aria-label={route.label}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(

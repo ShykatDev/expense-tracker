@@ -11,6 +11,7 @@ import {
   type CustomCategory,
   type TransactionType,
 } from "@/lib/transactions";
+import { createId } from "@/lib/id"
 
 type CustomCategories = Record<TransactionType, CustomCategory[]>;
 
@@ -93,7 +94,7 @@ export function useCustomCategories() {
       label: string;
       iconKey: string;
     }) => {
-      const id = crypto.randomUUID();
+      const id = createId();
       const category: CustomCategory = {
         id,
         key: `custom-${id}`,

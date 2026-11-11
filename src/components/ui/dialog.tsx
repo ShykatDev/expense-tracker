@@ -52,7 +52,6 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        data-lenis-prevent
         className={cn(
           "fixed inset-x-0 bottom-0 z-50 grid max-h-[90dvh] w-full gap-5 overflow-y-auto rounded-t-[2rem] bg-[linear-gradient(180deg,#16171a_0%,#0a0a0b_100%)] px-6 pt-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-sm text-white shadow-[0_-1px_0_0_rgba(255,255,255,0.08),0_-20px_60px_-20px_rgba(0,0,0,0.8)] duration-300 outline-none before:absolute before:top-3 before:left-1/2 before:h-1 before:w-10 before:-translate-x-1/2 before:rounded-full before:bg-white/20 data-open:animate-in data-open:fade-in-0 data-open:slide-in-from-bottom-10 data-closed:animate-out data-closed:fade-out-0 data-closed:slide-out-to-bottom-10 sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[2rem] sm:pt-7 sm:pb-6 sm:ring-1 sm:ring-white/10 sm:before:hidden sm:data-open:slide-in-from-bottom-0 sm:data-open:zoom-in-95 sm:data-closed:slide-out-to-bottom-0 sm:data-closed:zoom-out-95",
           className

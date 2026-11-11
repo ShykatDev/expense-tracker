@@ -143,6 +143,16 @@
     /* SF and Inter are tuned for default tracking. */
     letter-spacing: normal;
   }
+  /*
+   * No rubber-band bounce on the page itself: on iOS the bounce can drag
+   * fixed elements (the bottom navigation) along with the content. Inner
+   * scroll areas keep their own native momentum.
+   */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
   html {
     @apply font-sans;
     /* Scrollbars are part of the palette: thin and dark, not the bright
@@ -322,104 +332,6 @@ html.app-loading .reveal-nav {
   }
 }
 
-/*
- * Page transitions (see components/layout/page-transition.tsx). The old page
- * leaves quickly; the new one arrives a little more gently.
- */
-::view-transition-old(.tab-forward) {
-  --slide-offset: -48px;
-  animation:
-    160ms ease-in both vt-fade reverse,
-    380ms cubic-bezier(0.22, 1, 0.36, 1) both vt-slide reverse;
-}
-::view-transition-new(.tab-forward) {
-  --slide-offset: 48px;
-  animation:
-    240ms ease-out 120ms both vt-fade,
-    420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-slide;
-}
-::view-transition-old(.tab-back) {
-  --slide-offset: 48px;
-  animation:
-    160ms ease-in both vt-fade reverse,
-    380ms cubic-bezier(0.22, 1, 0.36, 1) both vt-slide reverse;
-}
-::view-transition-new(.tab-back) {
-  --slide-offset: -48px;
-  animation:
-    240ms ease-out 120ms both vt-fade,
-    420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-slide;
-}
-
-/* The entry screen rises over the page, which recedes behind it. */
-::view-transition-new(.sheet-up) {
-  animation: 460ms cubic-bezier(0.22, 1, 0.36, 1) both vt-rise;
-}
-::view-transition-old(.page-recede) {
-  animation: 460ms cubic-bezier(0.22, 1, 0.36, 1) both vt-recede;
-}
-::view-transition-old(.sheet-down) {
-  animation: 380ms cubic-bezier(0.4, 0, 1, 1) both vt-rise reverse;
-  z-index: 2;
-}
-::view-transition-new(.page-return) {
-  animation: 460ms cubic-bezier(0.22, 1, 0.36, 1) both vt-recede reverse;
-}
-
-/* The bottom navigation is the anchor: it never moves during a transition. */
-::view-transition-group(bottom-nav) {
-  animation: none;
-  z-index: 100;
-}
-::view-transition-old(bottom-nav) {
-  display: none;
-}
-::view-transition-new(bottom-nav) {
-  animation: none;
-}
-
-@keyframes vt-fade {
-  from {
-    opacity: 0;
-    filter: blur(4px);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-  }
-}
-@keyframes vt-slide {
-  from {
-    translate: var(--slide-offset) 0;
-  }
-  to {
-    translate: 0 0;
-  }
-}
-@keyframes vt-rise {
-  from {
-    translate: 0 100%;
-    border-radius: 2rem;
-  }
-  to {
-    translate: 0 0;
-  }
-}
-@keyframes vt-recede {
-  to {
-    scale: 0.94;
-    opacity: 0.4;
-    filter: blur(2px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
-}
 
 /*
  * Dashboard sheet: as it rises (--sheet-p → 1), the hero's body fades,

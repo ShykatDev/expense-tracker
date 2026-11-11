@@ -51,7 +51,9 @@ export function AppHero({
 }) {
   return (
     <section
-      className="relative isolate overflow-hidden px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-20 sm:px-8"
+      // Top padding = the status-bar inset plus a gap, so the header clears
+      // the soft blur iOS draws just below the status bar in standalone mode.
+      className="relative isolate overflow-hidden px-5 pt-[calc(env(safe-area-inset-top)+1.25rem)] pb-20 sm:px-8"
       style={{ background: HERO_BACKGROUND }}
     >
       <div

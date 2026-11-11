@@ -20,7 +20,6 @@ import {
   SheetButton,
   SheetToggle,
 } from "@/components/layout/app-shell";
-import { TRANSITION } from "@/components/layout/page-transition";
 import {
   computeTotals,
   isWithinDateRange,
@@ -91,7 +90,7 @@ export function HistoryView() {
       <AppHero
         label={isFiltered ? "Net for this view" : "All-time balance"}
         value={<HeroAmount value={totals.balance} />}
-        action={{ label: "Add transaction", onClick: () => router.push("/transaction", { transitionTypes: [...TRANSITION.sheetUp] }) }}
+        action={{ label: "Add transaction", onClick: () => router.push("/transaction") }}
       >
         <p className="text-xs tabular-nums text-white/55">
           {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"}
@@ -154,7 +153,7 @@ export function HistoryView() {
         <TransactionHistory
           transactions={shown}
           customCategories={customCategories}
-          onEdit={(transaction) => router.push(`/transaction?edit=${transaction.id}`, { transitionTypes: [...TRANSITION.sheetUp] })}
+          onEdit={(transaction) => router.push(`/transaction?edit=${transaction.id}`)}
           onDelete={setDeleting}
           emptyMessage={
             transactions.length === 0

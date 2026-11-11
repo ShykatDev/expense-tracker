@@ -9,7 +9,6 @@ import { useCategories } from "@/components/categories/categories-provider";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { CategorySheet } from "@/components/transaction/category-sheet";
 import { DateStrip } from "@/components/transaction/date-strip";
-import { TRANSITION } from "@/components/layout/page-transition";
 import { applyKey, NumericKeypad } from "@/components/transaction/numeric-keypad";
 import { resolveCategories } from "@/lib/categories";
 import { getCategoryIconByKey } from "@/lib/category-icons";
@@ -140,7 +139,7 @@ export function TransactionEntry() {
       toast.success(`Added ${type === "income" ? "income" : "expense"}`);
     }
 
-    router.push("/", { transitionTypes: [...TRANSITION.sheetDown] });
+    router.push("/");
   }
 
   // A hardware keyboard works too, which matters on desktop.
@@ -179,11 +178,11 @@ export function TransactionEntry() {
       className="reveal-target mx-auto flex min-h-dvh w-full max-w-md flex-col bg-white text-neutral-900"
     >
       {/* Type toggle, with a quiet way out on the left. */}
-      <header className="relative flex items-center justify-center px-5 pt-[max(1.75rem,env(safe-area-inset-top))]">
+      <header className="relative flex items-center justify-center px-5 pt-[max(1.75rem,calc(env(safe-area-inset-top)+1.25rem))]">
         <button
           type="button"
           aria-label="Close"
-          onClick={() => router.push("/", { transitionTypes: [...TRANSITION.sheetDown] })}
+          onClick={() => router.push("/")}
           className="absolute left-4 flex size-10 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
         >
           <X className="size-5" strokeWidth={1.75} />
