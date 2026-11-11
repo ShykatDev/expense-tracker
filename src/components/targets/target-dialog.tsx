@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
@@ -13,8 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { NumericKeypad } from "@/components/transaction/numeric-keypad";
 import type { ResolvedCategory } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,6 @@ export function TargetDialog({
   mode,
   categories,
   initial,
-  initialMonth,
   initialMonthLabel,
   onSubmit,
 }: {
@@ -32,21 +31,18 @@ export function TargetDialog({
   onOpenChange: (open: boolean) => void;
   mode: "create" | "edit";
   categories: ResolvedCategory[];
+  /** The target being edited, with the amount that applies this month. */
   initial?: {
     categoryKey: string;
     categoryLabel: string;
     amount: number;
-    overrideMonth?: string;
-    overrideAmount?: number;
   };
-  initialMonth: string;
+  /** e.g. "November 2026": the month the saved value starts from. */
   initialMonthLabel: string;
   onSubmit: (input: {
     categoryKey: string;
     categoryLabel: string;
     amount: number;
-    overrideMonth?: string;
-    overrideAmount?: number;
   }) => void;
 }) {
   const [categoryKey, setCategoryKey] = React.useState(
@@ -55,12 +51,10 @@ export function TargetDialog({
   const [amount, setAmount] = React.useState(
     initial ? String(initial.amount) : "",
   );
-  const [useOverride, setUseOverride] = React.useState(
-    initial?.overrideAmount !== undefined,
-  );
-  const [overrideAmount, setOverrideAmount] = React.useState(
-    initial?.overrideAmount ? String(initial.overrideAmount) : "",
-  );
+  /** True while the category grid replaces the keypad. */
+  const [picking, setPicking] = React.useState(false);
+  const selectedCategory = categories.find((item) => item.key === categoryKey);
+  const monthName = initialMonthLabel.split(" ")[0];
 
   function handleSubmit() {
     if (!categoryKey) {
@@ -80,22 +74,10 @@ export function TargetDialog({
       return;
     }
 
-    let override: { month: string; amount: number } | undefined;
-    if (useOverride) {
-      const overrideValue = Number(overrideAmount);
-      if (!overrideAmount.trim() || !Number.isFinite(overrideValue) || overrideValue <= 0) {
-        toast.error("Enter an amount for this month");
-        return;
-      }
-      override = { month: initialMonth, amount: overrideValue };
-    }
-
     onSubmit({
       categoryKey,
       categoryLabel: category.label,
       amount: value,
-      overrideMonth: override?.month,
-      overrideAmount: override?.amount,
     });
     onOpenChange(false);
   }
@@ -108,90 +90,113 @@ export function TargetDialog({
             {mode === "create" ? "Set target" : "Edit target"}
           </DialogTitle>
           <DialogDescription>
-            Cap what you spend each month on a category.
+            Saved for {monthName}. Later months keep this amount until you
+            change it.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Category</Label>
-            <div className="max-h-52 overflow-y-auto rounded-3xl bg-white/6">
+        {/* min-w-0: the dialog is a grid; keep its content from forcing the
+            column wider than the sheet. */}
+        <div className="flex min-w-0 flex-col gap-5">
+          {/* The amount, large, like the entry screen. */}
+          <div className="flex flex-col items-center gap-1.5">
+            <p
+              aria-live="polite"
+              aria-label={`Monthly target ${amount || "0"}`}
+              className="font-display text-5xl font-semibold tracking-tight tabular-nums whitespace-nowrap"
+            >
+              <span className={amount ? "text-white" : "text-white/30"}>৳</span>
+              <span className={amount ? "text-white" : "text-white/30"}>
+                {amount
+                  ? Number(amount.replace(/\.$/, "")).toLocaleString("en-US") + (amount.endsWith(".") ? "." : "")
+                  : "0"}
+              </span>
+            </p>
+            <p className="text-xs text-white/50">
+              per month, from {monthName} onward
+            </p>
+          </div>
+
+          {/* Category, as on the entry screen: an icon chip plus a name pill. */}
+          <button
+            type="button"
+            onClick={() => setPicking((prev) => !prev)}
+            aria-expanded={picking}
+            aria-label={selectedCategory ? `Category: ${selectedCategory.label}. Change` : "Choose a category"}
+            className="mx-auto flex items-center gap-1.5 transition-transform active:scale-95"
+          >
+            <span
+              className={cn(
+                "flex size-10 items-center justify-center rounded-full",
+                selectedCategory ? "bg-white text-black" : "bg-white/8 text-white/60",
+              )}
+            >
+              {selectedCategory ? <selectedCategory.icon className="size-4" /> : <Plus className="size-4" />}
+            </span>
+            <span
+              className={cn(
+                "flex h-10 max-w-56 items-center truncate rounded-full px-4 text-[15px] lowercase",
+                selectedCategory ? "bg-white text-black" : "bg-white/8 text-white/60",
+              )}
+            >
+              {selectedCategory?.label ?? "category"}
+            </span>
+          </button>
+
+          {/* The keypad, or — while choosing — the category grid in its place. */}
+          {picking ? (
+            <div
+              role="radiogroup"
+              aria-label="Category"
+              className="grid max-h-[17.5rem] grid-cols-2 gap-2 overflow-y-auto animate-in fade-in duration-200"
+            >
               {categories.length === 0 ? (
-                <p className="px-3 py-2 text-xs text-muted-foreground">
+                <p className="col-span-2 text-center text-xs text-white/50">
                   No expense categories available.
                 </p>
               ) : (
-                categories.map((category, index) => (
-                  <button
-                    key={category.key}
-                    type="button"
-                    onClick={() => setCategoryKey(category.key)}
-                    className={cn(
-                      "flex h-12 w-full items-center gap-3 px-4 text-left text-sm transition-colors",
-                      index !== categories.length - 1 &&
-                        "border-b border-white/6",
-                      categoryKey === category.key
-                        ? "bg-white/15 text-foreground"
-                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
-                    )}
-                  >
-                    <category.icon className="size-4 shrink-0" />
-                    <span className="truncate">{category.label}</span>
-                  </button>
-                ))
+                categories.map((category) => {
+                  const selected = categoryKey === category.key;
+                  return (
+                    <button
+                      key={category.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => {
+                        setCategoryKey(category.key);
+                        setPicking(false);
+                      }}
+                      className={cn(
+                        "flex min-w-0 items-center gap-2.5 rounded-full p-1.5 pr-4 text-left text-sm lowercase transition-colors active:scale-[0.98]",
+                        selected
+                          ? "bg-white text-black"
+                          : "bg-white/6 text-white/80 hover:bg-white/10",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "flex size-8 shrink-0 items-center justify-center rounded-full",
+                          selected ? "bg-black text-white" : "bg-white/8 text-white",
+                        )}
+                      >
+                        <category.icon className="size-4" />
+                      </span>
+                      <span className="truncate">{category.label}</span>
+                    </button>
+                  );
+                })
               )}
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground" htmlFor="target-amount">
-              Monthly target
-            </Label>
-            <Input
-              id="target-amount"
-              type="number"
-              inputMode="decimal"
-              min={0}
+          ) : (
+            <NumericKeypad
               value={amount}
-              placeholder="0"
-              onChange={(event) => setAmount(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") handleSubmit();
-              }}
+              onChange={setAmount}
+              variant="dark"
+              endKey="backspace"
+              compact
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <button
-              type="button"
-              onClick={() => setUseOverride((prev) => !prev)}
-              className={cn(
-                "h-11 w-full rounded-full px-4 text-left text-sm transition-colors",
-                useOverride
-                  ? "bg-white text-black"
-                  : "bg-white/6 text-white/60 hover:bg-white/10 hover:text-white",
-              )}
-            >
-              {useOverride
-                ? `Only for ${initialMonthLabel}`
-                : `Set a different amount for ${initialMonthLabel}`}
-            </button>
-
-            {useOverride && (
-              <Input
-                type="number"
-                inputMode="decimal"
-                min={0}
-                value={overrideAmount}
-                placeholder="0"
-                aria-label={`Target for ${initialMonthLabel}`}
-                onChange={(event) => setOverrideAmount(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") handleSubmit();
-                }}
-              />
-            )}
-          </div>
+          )}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row">

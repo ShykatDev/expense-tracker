@@ -1,6 +1,6 @@
 "use client";
 
-import { Database, Goal, Receipt, Tags, Target, Trash2 } from "lucide-react";
+import { ChevronRight, Database, Goal, Receipt, RotateCw, Tags, Target, Trash2 } from "lucide-react";
 import * as React from "react";
 
 import { useCategories } from "@/components/categories/categories-provider";
@@ -61,6 +61,16 @@ export function SettingsView() {
     { label: "Goals", count: goals.length, icon: Goal },
   ];
 
+  const [reloading, setReloading] = React.useState(false);
+
+  // An installed web app has no browser reload button or pull-to-refresh,
+  // so this is the way to pick up a new version. Data lives in
+  // localStorage, so it survives the reload.
+  function handleReload() {
+    setReloading(true);
+    window.location.reload();
+  }
+
   function handleReset() {
     if (confirmText.trim().toUpperCase() !== CONFIRM_WORD) return;
     clearAllData();
@@ -102,6 +112,30 @@ export function SettingsView() {
                 </span>
               </div>
             ))}
+          </Card>
+        </SheetSection>
+
+        <SheetSection title="App">
+          <Card className="gap-0 py-1">
+            <button
+              type="button"
+              onClick={handleReload}
+              disabled={reloading}
+              className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/4 active:bg-white/6 disabled:opacity-60"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
+                <RotateCw className={cn("size-4 text-white", reloading && "animate-spin")} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm text-white/85">
+                  {reloading ? "Reloading…" : "Reload app"}
+                </span>
+                <span className="block text-xs text-white/50">
+                  Refresh to pick up the latest version. Your data stays.
+                </span>
+              </span>
+              <ChevronRight className="size-4 shrink-0 text-white/50" />
+            </button>
           </Card>
         </SheetSection>
 

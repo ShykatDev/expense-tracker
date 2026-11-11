@@ -11,12 +11,15 @@ export interface CategoryTarget {
   categoryKey: string;
   /** Label captured at write time, kept in sync by the rename migration. */
   categoryLabel: string;
-  /** Recurring monthly cap. Always greater than zero. */
+  /**
+   * The cap set when the target was created. It applies to every month
+   * before the first value in `overrides`. Always greater than zero.
+   */
   amount: number;
   /**
-   * Per-month overrides keyed by "YYYY-MM". A month with an override uses
-   * that value instead of the recurring `amount`, so December can be more
-   * expensive without duplicating the whole target.
+   * Monthly values keyed by "YYYY-MM". Changing a target saves the new value
+   * for the current month; a month without its own value carries forward the
+   * most recent earlier month's value (see `resolveTargetAmount`).
    */
   overrides: Record<string, number>;
   createdAt: number;
@@ -57,13 +60,32 @@ export function isMonthKey(value: string) {
   return /^\d{4}-\d{2}$/.test(value);
 }
 
-/** The cap that applies to a given month, honouring per-month overrides. */
-export function resolveTargetAmount(target: CategoryTarget, month: string) {
-  const override = target.overrides[month];
-  if (typeof override === "number" && Number.isFinite(override) && override > 0) {
-    return override;
+function isValidAmount(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+/**
+ * The month whose saved value applies to `month`: that month itself if it
+ * has one, otherwise the most recent earlier month that does. Null when no
+ * month on or before it has a value, so the creation-time `amount` applies.
+ * "YYYY-MM" keys sort chronologically as plain strings.
+ */
+export function targetValueMonth(target: CategoryTarget, month: string): string | null {
+  let best: string | null = null;
+  for (const [key, value] of Object.entries(target.overrides)) {
+    if (!isMonthKey(key) || key > month || !isValidAmount(value)) continue;
+    if (best === null || key > best) best = key;
   }
-  return target.amount;
+  return best;
+}
+
+/**
+ * The cap for a given month: its own saved value, else the most recent
+ * earlier month's value carried forward, else the creation-time amount.
+ */
+export function resolveTargetAmount(target: CategoryTarget, month: string) {
+  const source = targetValueMonth(target, month);
+  return source ? target.overrides[source] : target.amount;
 }
 
 export function computeTargetStatus(

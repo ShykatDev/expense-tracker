@@ -5,10 +5,16 @@ import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
 import { useCategories } from "@/components/categories/categories-provider";
+import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { TargetDialog } from "@/components/targets/target-dialog";
+import {
+  getTargetState,
+  TargetMeter,
+  targetCardClass,
+  targetIconClass,
+} from "@/components/targets/target-meter";
 import { useTargets } from "@/components/targets/targets-provider";
 import { RowIconButton, SheetButton, SheetSection } from "@/components/layout/app-shell";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -24,9 +30,11 @@ import { findCategoryByKey, resolveCategories } from "@/lib/categories";
 import {
   monthKey as toMonthKey,
   resolveTargetAmount,
+  targetValueMonth,
   type CategoryTarget,
 } from "@/lib/targets";
-import { formatCurrency } from "@/lib/transactions";
+import { formatCurrency, isWithinDateRange } from "@/lib/transactions";
+import { cn } from "@/lib/utils";
 
 function formatMonthLabel(month: string) {
   const [year, monthIndex] = month.split("-").map(Number);
@@ -61,6 +69,18 @@ export function TargetsSection() {
     };
   }, []);
 
+  // This month's spending per category, so each target shows how close it is.
+  const { transactions } = useTransactions();
+  const spentByLabel = React.useMemo(() => {
+    const now = new Date();
+    const map: Record<string, number> = {};
+    for (const t of transactions) {
+      if (t.type !== "expense" || !isWithinDateRange(t.createdAt, "month", now)) continue;
+      map[t.category] = (map[t.category] ?? 0) + t.amount;
+    }
+    return map;
+  }, [transactions]);
+
   const expenseCategories = React.useMemo(
     () => resolveCategories("expense", categories.expense),
     [categories.expense],
@@ -90,25 +110,26 @@ export function TargetsSection() {
     [targets, allCustomCategories],
   );
 
+  /**
+   * A new target sets the starting cap for every month. Changing one saves
+   * the value for the current month only; later months carry it forward
+   * until they get their own value, and earlier months keep theirs.
+   */
   function handleSubmit(input: {
     categoryKey: string;
     categoryLabel: string;
     amount: number;
-    overrideMonth?: string;
-    overrideAmount?: number;
   }) {
     const existing = targets.find((t) => t.categoryKey === input.categoryKey);
 
-    upsertTarget({
-      categoryKey: input.categoryKey,
-      categoryLabel: input.categoryLabel,
-      amount: input.amount,
-    });
-
-    if (input.overrideMonth && input.overrideAmount !== undefined) {
-      setTargetOverride(input.categoryKey, input.overrideMonth, input.overrideAmount);
-    } else if (existing && input.overrideMonth) {
-      setTargetOverride(input.categoryKey, input.overrideMonth, undefined);
+    if (existing) {
+      setTargetOverride(input.categoryKey, currentMonth.key, input.amount);
+    } else {
+      upsertTarget({
+        categoryKey: input.categoryKey,
+        categoryLabel: input.categoryLabel,
+        amount: input.amount,
+      });
     }
 
     toast.success(
@@ -161,68 +182,83 @@ export function TargetsSection() {
           </p>
         </Card>
       ) : (
-        <Card className="gap-0 py-1">
-          {rows.map((row, index) => {
+        <div className="flex flex-col gap-2">
+          {rows.map((row) => {
             const cap = resolveTargetAmount(row.target, currentMonth.key);
-            const overrides = Object.entries(row.target.overrides);
+            const spent = spentByLabel[row.label] ?? 0;
+            const state = getTargetState(spent, cap);
+            const remaining = cap - spent;
+            // Where this month's cap came from, when it was set in an earlier month.
+            const sourceMonth = targetValueMonth(row.target, currentMonth.key);
+            const carriedFrom =
+              sourceMonth && sourceMonth !== currentMonth.key ? formatMonthLabel(sourceMonth) : null;
 
             return (
               <div
                 key={row.target.categoryKey}
-                className={`flex items-center gap-3 px-4 py-3 ${
-                  index !== rows.length - 1 ? "border-b border-white/6" : ""
-                }`}
+                className={cn(
+                  "flex flex-col gap-3 rounded-3xl p-4 ring-1 transition-colors duration-500",
+                  targetCardClass(state),
+                )}
               >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
-                  {row.icon ? (
-                    <row.icon className="size-4 text-foreground" />
-                  ) : (
-                    <Target className="size-4 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {row.label}
-                  </p>
-                  {overrides.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {overrides.map(([month, amount]) => (
-                        <Badge
-                          key={month}
-                          variant="outline"
-                          className="text-[0.65rem]"
-                        >
-                          {formatMonthLabel(month)}:{" "}
-                          {formatCurrency(amount)}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <Badge variant="secondary" className="tabular-nums">
-                  {formatCurrency(cap)}
-                </Badge>
-                <div className="flex shrink-0 gap-1">
-                  <RowIconButton
-                    aria-label={`Edit ${row.label} target`}
-                    onClick={() => {
-                      setEditing(row.target);
-                      setDialogOpen(true);
-                    }}
+                <div className="flex items-start gap-3">
+                  <span
+                    className={cn(
+                      "flex size-10 shrink-0 items-center justify-center rounded-full",
+                      targetIconClass(state),
+                    )}
                   >
-                    <Pencil />
-                  </RowIconButton>
-                  <RowIconButton
-                    aria-label={`Remove ${row.label} target`}
-                    onClick={() => setDeleting(row.target)}
+                    {row.icon ? <row.icon className="size-4" /> : <Target className="size-4" />}
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-white/85">{row.label}</p>
+                    <p className="mt-0.5 font-display text-lg leading-tight font-semibold tabular-nums text-white">
+                      {formatCurrency(cap)}
+                      <span className="ml-1 font-sans text-xs font-normal text-white/50">
+                        / month{carriedFrom ? ` · since ${carriedFrom}` : ""}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="-mt-1 -mr-1 flex shrink-0">
+                    <RowIconButton
+                      aria-label={`Edit ${row.label} target`}
+                      onClick={() => {
+                        setEditing(row.target);
+                        setDialogOpen(true);
+                      }}
+                    >
+                      <Pencil />
+                    </RowIconButton>
+                    <RowIconButton
+                      aria-label={`Remove ${row.label} target`}
+                      onClick={() => setDeleting(row.target)}
+                    >
+                      <Trash2 />
+                    </RowIconButton>
+                  </div>
+                </div>
+
+                <TargetMeter state={state} />
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span
+                    className={cn(
+                      "tabular-nums",
+                      state.isOver ? "text-rose-200/80" : state.isNear ? "text-amber-200/80" : "text-white/50",
+                    )}
                   >
-                    <Trash2 />
-                  </RowIconButton>
+                    {formatCurrency(spent)} spent ·{" "}
+                    {state.isOver
+                      ? `${formatCurrency(Math.abs(remaining))} over`
+                      : `${formatCurrency(remaining)} left`}
+                  </span>
                 </div>
               </div>
             );
           })}
-        </Card>
+        </div>
       )}
 
       <TargetDialog
@@ -236,13 +272,10 @@ export function TargetsSection() {
             ? {
                 categoryKey: editing.categoryKey,
                 categoryLabel: editing.categoryLabel,
-                amount: editing.amount,
-                overrideMonth: currentMonth.key,
-                overrideAmount: editing.overrides[currentMonth.key],
+                amount: resolveTargetAmount(editing, currentMonth.key),
               }
             : undefined
         }
-        initialMonth={currentMonth.key}
         initialMonthLabel={currentMonth.label}
         onSubmit={handleSubmit}
       />

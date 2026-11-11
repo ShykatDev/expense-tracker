@@ -297,7 +297,8 @@
 
 /* No scrolling (or iOS rubber-banding) while the splash is up. */
 html.app-loading,
-html.app-loading body {
+html.app-loading body,
+html.app-loading .app-scroller {
   overflow: hidden;
   overscroll-behavior: none;
 }

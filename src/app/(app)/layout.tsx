@@ -1,17 +1,27 @@
 import { BalanceSummaryProvider } from "@/components/dashboard/balance-summary-store";
 import { MonthNavProvider } from "@/components/dashboard/navbar";
+import { AppScroller } from "@/components/layout/app-scroller";
 import { BottomNav } from "@/components/layout/bottom-nav";
 
 /**
- * Every app page draws its own hero and sheet (see `AppShell`), so the layout
- * only centres a phone-width column, hosts the shared month state and shows
- * the floating bottom navigation.
+ * The app frame: exactly the viewport's height, so the document never
+ * scrolls. Pages scroll inside `AppScroller`, which keeps the fixed bottom
+ * navigation steady on mobile (no toolbar collapse, no page bounce).
+ *
+ * Inside, a phone-width column holds each page's own hero and sheet (see
+ * `AppShell`), alongside the shared month state and the navigation.
  */
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-1 flex-col md:py-6">
+    <div className="h-dvh w-full overflow-hidden">
       <BalanceSummaryProvider>
-        <MonthNavProvider>{children}</MonthNavProvider>
+        <MonthNavProvider>
+          <AppScroller>
+            <div className="mx-auto flex min-h-full w-full max-w-xl flex-col md:py-6">
+              {children}
+            </div>
+          </AppScroller>
+        </MonthNavProvider>
         <BottomNav />
       </BalanceSummaryProvider>
     </div>

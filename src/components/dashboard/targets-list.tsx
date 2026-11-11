@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { SheetButton, SheetSection } from "@/components/layout/app-shell";
+import {
+  getTargetState,
+  TargetMeter,
+  targetCardClass,
+  targetIconClass,
+} from "@/components/targets/target-meter";
 import { findCategoryByKey } from "@/lib/categories";
 import { getCategoryIconByKey } from "@/lib/category-icons";
 import {
@@ -87,34 +93,22 @@ export function TargetsList({
         {rows.map((row) => {
           const Icon = row.icon ?? getCategoryIconByKey(null);
           const remaining = row.cap - row.spent;
-          // The real share, uncapped, so "130%" reads honestly when over.
-          const percent = row.cap > 0 ? Math.round((row.spent / row.cap) * 100) : 0;
-          const isOver = row.status === "over";
-          const isReached = row.status === "reached";
-          // A heads-up before the cap is hit.
-          const isNear = !isOver && !isReached && percent >= 85;
+          const state = getTargetState(row.spent, row.cap);
+          const { isOver, isReached, isNear } = state;
 
           return (
             <div
               key={row.key}
               className={cn(
                 "flex flex-col gap-3 rounded-3xl p-4 ring-1 transition-colors duration-500",
-                isOver
-                  ? "bg-rose-500/[0.09] ring-rose-400/25"
-                  : isNear
-                    ? "bg-amber-400/[0.06] ring-amber-300/15"
-                    : "bg-white/6 ring-transparent",
+                targetCardClass(state),
               )}
             >
               <div className="flex items-center gap-3">
                 <span
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-full",
-                    isOver
-                      ? "bg-rose-500/15 text-rose-300"
-                      : isNear
-                        ? "bg-amber-400/12 text-amber-200"
-                        : "bg-white/8 text-white",
+                    targetIconClass(state),
                   )}
                 >
                   <Icon className="size-4" />
@@ -158,31 +152,7 @@ export function TargetsList({
                 )}
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className={cn("h-2 flex-1 overflow-hidden rounded-full", isOver ? "bg-rose-500/15" : "bg-white/8")}>
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-[width,background-color] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      isOver
-                        ? "bg-linear-to-r from-rose-500/70 to-rose-400"
-                        : isReached
-                          ? "bg-emerald-400/60"
-                          : isNear
-                            ? "bg-linear-to-r from-amber-500/60 to-amber-300/90"
-                            : "accent-gradient-x",
-                    )}
-                    style={{ width: `${Math.min(Math.max(percent, percent > 0 ? 3 : 0), 100)}%` }}
-                  />
-                </div>
-                <span
-                  className={cn(
-                    "w-10 shrink-0 text-right text-[11px] tabular-nums",
-                    isOver ? "font-medium text-rose-300" : isNear ? "text-amber-200/80" : "text-white/50",
-                  )}
-                >
-                  {percent}%
-                </span>
-              </div>
+              <TargetMeter state={state} />
             </div>
           );
         })}
