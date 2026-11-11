@@ -8,6 +8,7 @@ import { useMonthNav } from "@/components/dashboard/navbar";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { GoalCompleteDialog } from "@/components/goals/goal-complete-dialog";
 import { GoalDialog } from "@/components/goals/goal-dialog";
+import { SparkleBurst } from "@/components/goals/sparkle-burst";
 import { useGoals } from "@/components/goals/goals-provider";
 import {
   AppHero,
@@ -18,7 +19,6 @@ import {
   SheetButton,
   SheetSection,
 } from "@/components/layout/app-shell";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -30,7 +30,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
 import { getCategoryIconByKey } from "@/lib/category-icons";
 import {
   computeGoalProgress,
@@ -41,6 +40,7 @@ import {
   type GoalCompletionSource,
 } from "@/lib/goals";
 import { computeSavings } from "@/lib/savings";
+import { cn } from "@/lib/utils";
 import { formatCurrency, isWithinDateRange } from "@/lib/transactions";
 
 export function GoalsView() {
@@ -53,6 +53,8 @@ export function GoalsView() {
   const [editing, setEditing] = React.useState<Goal | null>(null);
   const [deleting, setDeleting] = React.useState<Goal | null>(null);
   const [completing, setCompleting] = React.useState<Goal | null>(null);
+  /** Bumped on each completion to play the sparkle burst. */
+  const [sparkle, setSparkle] = React.useState(0);
 
   // Savings is measured against the navbar's month, so the goals page and
   // the dashboard always show the same figure.
@@ -80,7 +82,11 @@ export function GoalsView() {
     [goals, savings],
   );
 
-  const activeRows = rows.filter((row) => row.goal.status === "active");
+  // Affordable goals first: they're the ones ready to be marked as got.
+  const activeRows = rows
+    .filter((row) => row.goal.status === "active")
+    .sort((a, b) => Number(b.funded) - Number(a.funded));
+  const doneRows = rows.filter((row) => row.goal.status !== "active");
   const activeCount = activeRows.length;
   const fundedCount = activeRows.filter((row) => row.funded).length;
 
@@ -141,6 +147,7 @@ export function GoalsView() {
       toast.success(`${completing.label} completed`);
     }
 
+    setSparkle((count) => count + 1);
     setCompleting(null);
   }
 
@@ -186,131 +193,66 @@ export function GoalsView() {
           </SheetButton>
         </Card>
       ) : (
-        <div className="flex flex-col gap-2">
-          {rows.map((row) => {
-            const Icon = getCategoryIconByKey(row.goal.iconKey);
-            const daysLeft = row.goal.targetDate
-              ? daysUntil(row.goal.targetDate)
-              : null;
-            const isCompleted = row.goal.status === "completed";
+        <div className="flex flex-col gap-8">
+          {activeRows.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {activeRows.map((row) => (
+                <GoalCard
+                  key={row.goal.id}
+                  goal={row.goal}
+                  funded={row.funded}
+                  progress={row.progress}
+                  onComplete={() => setCompleting(row.goal)}
+                  onEdit={() => {
+                    setEditing(row.goal);
+                    setDialogOpen(true);
+                  }}
+                  onDelete={() => setDeleting(row.goal)}
+                />
+              ))}
+            </div>
+          )}
 
-            return (
-              <div
-                key={row.goal.id}
-                className="flex flex-col gap-3 rounded-3xl bg-white/6 p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
-                    <Icon className="size-4 text-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {row.goal.label}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-1">
-                      <Badge
-                        variant={isCompleted ? "secondary" : "outline"}
-                        className={
-                          isCompleted
-                            ? "bg-emerald-500/15 text-emerald-400"
-                            : undefined
-                        }
-                      >
-                        {isCompleted
-                          ? "Completed"
-                          : row.goal.status === "archived"
-                            ? "Archived"
-                            : "Active"}
-                      </Badge>
-                      {daysLeft !== null && !isCompleted && (
-                        <Badge
-                          variant="outline"
-                          className={
-                            daysLeft < 0 ? "text-rose-400" : undefined
-                          }
-                        >
-                          {daysLeft < 0
-                            ? `${Math.abs(daysLeft)} days overdue`
-                            : `${daysLeft} days left`}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    {isCompleted ? (
-                      <RowIconButton
-                        aria-label={`Reopen ${row.goal.label}`}
-                        onClick={() => {
-                          reopenGoal(row.goal.id);
-                          toast.success(`Reopened ${row.goal.label}`);
-                        }}
-                      >
-                        <Check />
-                      </RowIconButton>
-                    ) : (
-                      <RowIconButton
-                        aria-label={`Complete ${row.goal.label}`}
-                        onClick={() => setCompleting(row.goal)}
-                      >
-                        <Check />
-                      </RowIconButton>
-                    )}
-                    <RowIconButton
-                      aria-label={`Edit ${row.goal.label}`}
+          {doneRows.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h3 className="px-1 text-xs font-medium text-white/50">Completed</h3>
+              <Card className="gap-0 py-1.5">
+                {doneRows.map((row) => (
+                  <div key={row.goal.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8 text-white/80">
+                      <GoalIcon iconKey={row.goal.iconKey} className="size-4" />
+                      <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-[#a9c4ff] text-[#0a1f52] ring-2 ring-[#141518]">
+                        <Check className="size-2.5" strokeWidth={3} />
+                      </span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-white/85">{row.goal.label}</span>
+                      <span className="block text-xs tabular-nums text-white/50">
+                        {formatCurrency(row.goal.targetAmount)}
+                      </span>
+                    </span>
+                    <SheetButton
                       onClick={() => {
-                        setEditing(row.goal);
-                        setDialogOpen(true);
+                        reopenGoal(row.goal.id);
+                        toast.success(`Reopened ${row.goal.label}`);
                       }}
                     >
-                      <Pencil />
-                    </RowIconButton>
-                    <RowIconButton
-                      aria-label={`Delete ${row.goal.label}`}
-                      onClick={() => setDeleting(row.goal)}
-                    >
+                      Reopen
+                    </SheetButton>
+                    <RowIconButton aria-label={`Delete ${row.goal.label}`} onClick={() => setDeleting(row.goal)}>
                       <Trash2 />
                     </RowIconButton>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Progress value={row.progress * 100} className="flex-1">
-                    <ProgressTrack>
-                      <ProgressIndicator
-                        className={
-                          isCompleted
-                            ? "bg-emerald-400"
-                            : daysLeft !== null && daysLeft < 0
-                              ? "bg-rose-400"
-                              : "accent-gradient-x"
-                        }
-                      />
-                    </ProgressTrack>
-                  </Progress>
-                  <span className="w-9 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                    {Math.round(row.progress * 100)}%
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-3 text-xs tabular-nums">
-                  <span className="text-white/50">
-                    {isCompleted
-                      ? "Completed"
-                      : row.funded
-                        ? "You can afford this"
-                        : `${formatCurrency(row.remaining)} to go`}
-                  </span>
-                  <span className="font-medium text-white/80">
-                    {formatCurrency(row.goal.targetAmount)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+                ))}
+              </Card>
+            </div>
+          )}
         </div>
       )}
       </SheetSection>
       </AppSheet>
+
+      <SparkleBurst burst={sparkle} />
 
       <GoalDialog
         key={editing?.id ?? "create"}
@@ -360,5 +302,106 @@ export function GoalsView() {
         </DialogContent>
       </Dialog>
     </AppShell>
+  );
+}
+
+/** A goal's chosen icon, rendered without creating a component per render. */
+function GoalIcon({ iconKey, className }: { iconKey?: string; className?: string }) {
+  return React.createElement(getCategoryIconByKey(iconKey), { className });
+}
+
+/**
+ * One active goal, kept to the essentials: icon, name and price, a progress
+ * bar towards it, and a clear "Got …" action. The action turns white once
+ * savings cover the goal, but it is always available — a goal can be a
+ * gift, or bought on a stretch. A deadline, if set, is a small chip.
+ */
+function GoalCard({
+  goal,
+  funded,
+  progress,
+  onComplete,
+  onEdit,
+  onDelete,
+}: {
+  goal: Goal;
+  funded: boolean;
+  progress: number;
+  onComplete: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const daysLeft = goal.targetDate ? daysUntil(goal.targetDate) : null;
+  const overdue = daysLeft !== null && daysLeft < 0;
+  const percent = Math.round(progress * 100);
+
+  return (
+    <div className="flex flex-col gap-4 rounded-3xl bg-white/6 p-4">
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/8 text-white">
+          <GoalIcon iconKey={goal.iconKey} className="size-5" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-base text-white">{goal.label}</p>
+            {daysLeft !== null && (
+              <span
+                className={cn(
+                  "shrink-0 rounded-full px-2 py-0.5 text-[11px] tabular-nums",
+                  overdue ? "bg-rose-500/15 text-rose-300" : "bg-white/8 text-white/60",
+                )}
+              >
+                {overdue ? `${Math.abs(daysLeft)}d late` : daysLeft === 0 ? "today" : `${daysLeft}d`}
+              </span>
+            )}
+          </div>
+          <p className="font-display text-lg leading-tight font-semibold tabular-nums text-white">
+            {formatCurrency(goal.targetAmount)}
+          </p>
+        </div>
+
+        <div className="-mr-1 flex shrink-0 self-start">
+          <RowIconButton aria-label={`Edit ${goal.label}`} onClick={onEdit}>
+            <Pencil />
+          </RowIconButton>
+          <RowIconButton aria-label={`Delete ${goal.label}`} onClick={onDelete}>
+            <Trash2 />
+          </RowIconButton>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3" aria-label={`${percent}% saved towards ${goal.label}`}>
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/8">
+          <div
+            className={cn(
+              "h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              funded ? "bg-[#d6e4ff]" : "accent-gradient-x",
+            )}
+            style={{ width: `${Math.max(percent, percent > 0 ? 3 : 0)}%` }}
+          />
+        </div>
+        <span
+          className={cn(
+            "w-10 shrink-0 text-right text-xs tabular-nums",
+            funded ? "font-medium text-[#d6e4ff]" : "text-white/50",
+          )}
+        >
+          {percent}%
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={onComplete}
+        className={cn(
+          "flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-medium transition-[background-color,transform] duration-200 active:scale-[0.98]",
+          funded ? "bg-white text-black hover:bg-white/90" : "bg-white/8 text-white/85 hover:bg-white/12",
+        )}
+      >
+        <Check className="size-4" strokeWidth={2.4} />
+        <span className="truncate">Got {goal.label}</span>
+      </button>
+    </div>
   );
 }

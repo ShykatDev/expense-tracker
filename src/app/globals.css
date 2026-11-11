@@ -402,3 +402,46 @@ html.app-loading .reveal-nav {
     animation: none;
   }
 }
+
+/* Goal completion sparkle burst (see components/goals/sparkle-burst.tsx). */
+@keyframes sparkle-fly {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.2) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--sx), var(--sy)) scale(1) rotate(var(--sr));
+  }
+}
+
+.sparkle {
+  opacity: 0;
+  animation-name: sparkle-fly;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes sparkle-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+.sparkle-flash {
+  animation: sparkle-flash 700ms ease-out forwards;
+}

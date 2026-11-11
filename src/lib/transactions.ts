@@ -99,13 +99,18 @@ export const GOALS_STORAGE_KEY = "expense-tracker:goals";
 export const GOAL_COMPLETIONS_STORAGE_KEY =
   "expense-tracker:goal-completions";
 
+/**
+ * Formats money as "৳12,345". It never shows a minus sign: a negative
+ * amount is formatted by its size, and the UI marks it some other way (red
+ * text and a down badge for a deficit, a red icon for an expense).
+ */
 export function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "BDT",
     currencyDisplay: "narrowSymbol",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(Math.abs(amount));
 }
 
 export function formatCompactNumber(amount: number) {

@@ -96,7 +96,7 @@ export function ConfirmTransactionActionDialog({
             </p>
           </div>
           <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-            {transaction?.type === "income" ? "+" : "−"}
+            {transaction?.type === "income" && "+"}
             {formatCurrency(amount)}
           </span>
         </div>

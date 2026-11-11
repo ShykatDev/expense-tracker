@@ -89,9 +89,10 @@ export function TransactionHistory({
           <div key={group.label} className="flex flex-col gap-2">
             <div className="flex items-center justify-between px-1 text-xs">
               <span className="font-medium text-white/50">{group.label}</span>
-              <span className="tabular-nums text-white/50">
-                {net >= 0 ? "+" : "−"}
-                {formatCurrency(Math.abs(net))}
+              {/* No minus sign: a day that spent more than it earned shows in red. */}
+              <span className={cn("tabular-nums", net < 0 ? "text-rose-300/70" : "text-white/50")}>
+                {net > 0 && "+"}
+                {formatCurrency(net)}
               </span>
             </div>
             <Card className="gap-0 py-1.5">
@@ -171,7 +172,7 @@ function TransactionRow({
           "text-white",
         )}
       >
-        {isIncome ? "+" : "−"}
+        {isIncome && "+"}
         {formatCurrency(transaction.amount)}
       </span>
     </button>
@@ -217,7 +218,7 @@ function TransactionSheet({
                 />
               </span>
               <DialogTitle className="mt-2 font-display text-3xl font-bold tabular-nums">
-                {isIncome ? "+" : "−"}
+                {isIncome && "+"}
                 {formatCurrency(shown.amount)}
               </DialogTitle>
               <DialogDescription className="flex items-center gap-1.5">
