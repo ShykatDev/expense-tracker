@@ -19,7 +19,7 @@ import { monthKey } from "@/lib/targets";
 import { usePublishBalance } from "./balance-summary-store";
 import { ConfirmTransactionActionDialog } from "./confirm-transaction-action";
 import { DashboardHero } from "./dashboard-hero";
-import { ExpandableSheet } from "./expandable-sheet";
+import { ExpandableSheet } from "@/components/layout/expandable-sheet";
 import { useMonthNav } from "./navbar";
 import { SpendingAnalytics, SpentCategories } from "./spending-analytics";
 import { TargetsList } from "./targets-list";

@@ -175,7 +175,7 @@ export function TransactionEntry() {
   return (
     <div
       data-transaction-entry
-      className="reveal-target mx-auto flex min-h-dvh w-full max-w-md flex-col bg-white text-neutral-900"
+      className="reveal-target mx-auto flex min-h-[calc(100dvh+var(--viewport-gap,0px))] w-full max-w-md flex-col bg-white text-neutral-900"
     >
       {/* Type toggle, with a quiet way out on the left. */}
       <header className="relative flex items-center justify-center px-5 pt-[max(1.75rem,calc(env(safe-area-inset-top)+1.25rem))]">

@@ -20,14 +20,18 @@ const FLICK = 0.45;
 const SNAP = "520ms cubic-bezier(0.22, 1, 0.36, 1)";
 
 /**
- * The dashboard's two-state layout.
+ * The two-state layout every app page shares.
  *
- * Collapsed: the full hero, with a sheet peeking below it that shows only
- * `peek` (the chart). Swipe the sheet up — or tap its handle, or scroll
- * down with a wheel — and it rises to just below the hero's header row
- * (logo, month, +), which stays visible on its gradient, then scrolls
- * internally to reveal `details`. Swiping down from the top of that scroll
- * collapses it again.
+ * Collapsed: the full hero, with a sheet peeking below it that shows
+ * `peek` (the dashboard's chart, a page's filters, …). Swipe the sheet up —
+ * or tap its handle, or scroll down with a wheel — and it rises to just
+ * below the hero's header row (logo, month, +), which stays visible on its
+ * gradient, then scrolls internally to reveal `details`. Swiping down from
+ * the top of that scroll collapses it again.
+ *
+ * `details` stay hidden until the sheet opens, unless `previewDetails` is
+ * set: then they show from the start, clipped by the collapsed sheet, as a
+ * glimpse of what's below.
  *
  * The hero marks its header with `data-hero-header` (where the open sheet
  * stops) and its body with `data-hero-content` (what fades away). Dragging
@@ -40,10 +44,15 @@ export function ExpandableSheet({
   hero,
   peek,
   details,
+  hint = "Swipe up for details",
+  previewDetails = false,
 }: {
   hero: React.ReactNode;
-  peek: (expanded: boolean) => React.ReactNode;
+  peek?: (expanded: boolean) => React.ReactNode;
   details: React.ReactNode;
+  /** The nudge under `peek` while collapsed. */
+  hint?: string;
+  previewDetails?: boolean;
 }) {
   const rootRef = React.useRef<HTMLDivElement>(null);
   const heroRef = React.useRef<HTMLDivElement>(null);
@@ -205,7 +214,7 @@ export function ExpandableSheet({
   return (
     <div
       ref={rootRef}
-      className="reveal-target relative h-dvh overflow-hidden overscroll-none bg-black md:h-[calc(100dvh-3rem)] md:rounded-[2rem] md:border md:border-white/10"
+      className="reveal-target relative h-[calc(100dvh+var(--viewport-gap,0px))] overflow-hidden overscroll-none bg-black md:h-[calc(100dvh-3rem)] md:rounded-[2rem] md:border md:border-white/10"
       style={{ "--sheet-p": 0 } as React.CSSProperties}
     >
       {/* The hero. Its background and header row stay; its body fades,
@@ -241,7 +250,7 @@ export function ExpandableSheet({
             expanded ? "overflow-y-auto" : "overflow-hidden",
           )}
         >
-          {peek(expanded)}
+          {peek?.(expanded)}
 
           {/* A nudge to swipe. It fades out and its space collapses as the
               sheet opens, so it doesn't leave a hole above the details. */}
@@ -257,14 +266,21 @@ export function ExpandableSheet({
             style={{ opacity: "calc(1 - var(--sheet-p) * 2)" }}
           >
             <ChevronUp className="size-3.5 animate-bounce [animation-duration:2s]" />
-            Swipe up for details
+            {hint}
           </button>
           </div>
 
           <div
-            className="flex flex-col gap-10 pt-10 pb-[calc(7rem+env(safe-area-inset-bottom))]"
-            style={{ opacity: "clamp(0, calc(var(--sheet-p) * 2 - 0.6), 1)" }}
-            aria-hidden={!expanded || undefined}
+            className={cn(
+              "flex flex-col gap-10 pb-[calc(7rem+env(safe-area-inset-bottom))]",
+              peek ? "pt-10" : "pt-4",
+            )}
+            style={
+              previewDetails
+                ? undefined
+                : { opacity: "clamp(0, calc(var(--sheet-p) * 2 - 0.6), 1)" }
+            }
+            aria-hidden={(!previewDetails && !expanded) || undefined}
           >
             {details}
           </div>

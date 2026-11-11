@@ -9,10 +9,9 @@ import { useCategories } from "@/components/categories/categories-provider";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { TargetsSection } from "@/components/targets/targets-section";
 import { useTargets } from "@/components/targets/targets-provider";
+import { ExpandableSheet } from "@/components/layout/expandable-sheet";
 import {
   AppHero,
-  AppSheet,
-  AppShell,
   RowIconButton,
   SheetSection,
   SheetToggle,
@@ -110,119 +109,125 @@ export function CategoriesView() {
   }
 
   return (
-    <AppShell>
-      <AppHero
-        label={type === "expense" ? "Expense Categories" : "Income Sources"}
-        value={<AnimatedNumber value={visibleCount} />}
-        action={{
-          label: "Add category",
-          onClick: () => {
-            setEditing(null);
-            setDialogOpen(true);
-          },
-        }}
-      >
-        <p className="text-xs text-white/55">
-          shown in the entry screen · {resolved.length - visibleCount} hidden
-        </p>
-        <div className="mt-5">
-          <SheetToggle
-            label="Category type"
-            value={type}
-            options={TYPE_OPTIONS}
-            onChange={setType}
-          />
-        </div>
-      </AppHero>
-
-      <AppSheet>
-      {type === "expense" ? (
-        <TargetsSection />
-      ) : (
-        <p className="rounded-2xl bg-white/6 px-5 py-4 text-center text-xs text-white/50">
-          Targets apply to expense categories. Switch to expenses to set one.
-        </p>
-      )}
-
-      <SheetSection
-        title={type === "expense" ? "All categories" : "All sources"}
-        subtitle="Toggle off the ones you don't use"
-      >
-      {!isLoaded ? (
-        <Card className="gap-2 py-4">
-          {[0, 1, 2, 3].map((index) => (
-            <div
-              key={index}
-              className="h-10 animate-pulse rounded-2xl bg-white/5"
-            />
-          ))}
-        </Card>
-      ) : (
-        <Card className="gap-0 py-1">
-          {resolved.map((category, index) => {
-            const isVisible = !hidden[type].includes(category.key);
-            const isCustom = category.source === "custom";
-            return (
-              <div
-                key={category.key}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3",
-                  index !== resolved.length - 1 && "border-b border-white/6",
-                )}
-              >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
-                  <category.icon className="size-4 text-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {category.label}
-                  </p>
-                </div>
-                <Badge
-                  variant={isCustom ? "secondary" : "outline"}
-                  className="text-[0.65rem]"
-                >
-                  {isCustom ? "Custom" : "Built-in"}
-                </Badge>
-                <Switch
-                  checked={isVisible}
-                  onCheckedChange={() => toggleCategory(type, category.key)}
-                  aria-label={`Toggle ${category.label}`}
+    <>
+      <ExpandableSheet
+        hint="Swipe up for all categories"
+        previewDetails
+        hero={
+          <AppHero
+            label={type === "expense" ? "Expense Categories" : "Income Sources"}
+            value={<AnimatedNumber value={visibleCount} />}
+            action={{
+              label: "Add category",
+              onClick: () => {
+                setEditing(null);
+                setDialogOpen(true);
+              },
+            }}
+          >
+            <p className="text-xs text-white/55">
+              shown in the entry screen · {resolved.length - visibleCount} hidden
+            </p>
+            <div className="mt-5">
+              <SheetToggle
+                label="Category type"
+                value={type}
+                options={TYPE_OPTIONS}
+                onChange={setType}
+              />
+            </div>
+          </AppHero>
+        }
+        peek={() =>
+          type === "expense" ? (
+            <TargetsSection />
+          ) : (
+            <p className="rounded-2xl bg-white/6 px-5 py-4 text-center text-xs text-white/50">
+              Targets apply to expense categories. Switch to expenses to set one.
+            </p>
+          )
+        }
+        details={
+          <SheetSection
+            title={type === "expense" ? "All categories" : "All sources"}
+            subtitle="Toggle off the ones you don't use"
+          >
+          {!isLoaded ? (
+            <Card className="gap-2 py-4">
+              {[0, 1, 2, 3].map((index) => (
+                <div
+                  key={index}
+                  className="h-10 animate-pulse rounded-2xl bg-white/5"
                 />
-                {isCustom && (
-                  <div className="flex shrink-0 gap-1">
-                    <RowIconButton
-                      aria-label={`Edit ${category.label}`}
-                      onClick={() => {
-                        setEditing(
-                          customCategories.find((c) => c.id === category.id) ??
-                            null,
-                        );
-                        setDialogOpen(true);
-                      }}
+              ))}
+            </Card>
+          ) : (
+            <Card className="gap-0 py-1">
+              {resolved.map((category, index) => {
+                const isVisible = !hidden[type].includes(category.key);
+                const isCustom = category.source === "custom";
+                return (
+                  <div
+                    key={category.key}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3",
+                      index !== resolved.length - 1 && "border-b border-white/6",
+                    )}
+                  >
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
+                      <category.icon className="size-4 text-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {category.label}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={isCustom ? "secondary" : "outline"}
+                      className="text-[0.65rem]"
                     >
-                      <Pencil />
-                    </RowIconButton>
-                    <RowIconButton
-                      aria-label={`Delete ${category.label}`}
-                      onClick={() =>
-                        setDeleting(
-                          customCategories.find((c) => c.id === category.id) ??
-                            null,
-                        )
-                      }
-                    >
-                      <Trash2 />
-                    </RowIconButton>
+                      {isCustom ? "Custom" : "Built-in"}
+                    </Badge>
+                    <Switch
+                      checked={isVisible}
+                      onCheckedChange={() => toggleCategory(type, category.key)}
+                      aria-label={`Toggle ${category.label}`}
+                    />
+                    {isCustom && (
+                      <div className="flex shrink-0 gap-1">
+                        <RowIconButton
+                          aria-label={`Edit ${category.label}`}
+                          onClick={() => {
+                            setEditing(
+                              customCategories.find((c) => c.id === category.id) ??
+                                null,
+                            );
+                            setDialogOpen(true);
+                          }}
+                        >
+                          <Pencil />
+                        </RowIconButton>
+                        <RowIconButton
+                          aria-label={`Delete ${category.label}`}
+                          onClick={() =>
+                            setDeleting(
+                              customCategories.find((c) => c.id === category.id) ??
+                                null,
+                            )
+                          }
+                        >
+                          <Trash2 />
+                        </RowIconButton>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </Card>
-      )}
-      </SheetSection>
-      </AppSheet>
+                );
+              })}
+            </Card>
+          )}
+          </SheetSection>
+        }
+      />
 
       <CategoryDialog
         key={editing?.id ?? "create"}
@@ -263,6 +268,6 @@ export function CategoriesView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppShell>
+    </>
   );
 }

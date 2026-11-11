@@ -9,21 +9,6 @@ import { AnimatedNumber } from "@/components/ui/animated-number";
 import { formatCurrency } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
-/**
- * The page frame every app route shares: a dark blue hero at the top and a
- * black rounded sheet rising over it.
- *
- * Full-bleed on phones; on wider screens it becomes a rounded, phone-like
- * column so the composition holds together.
- */
-export function AppShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="reveal-target flex flex-1 flex-col animate-in fade-in duration-500 md:overflow-hidden md:rounded-[2rem] md:border md:border-white/10">
-      {children}
-    </div>
-  );
-}
-
 /** The deep navy gradient. It fades to black so the sheet reads as one surface. */
 const HERO_BACKGROUND =
   "radial-gradient(75% 55% at 88% 30%, rgba(59,130,246,0.24) 0%, rgba(59,130,246,0) 70%), radial-gradient(60% 45% at 0% 0%, rgba(96,165,250,0.10) 0%, rgba(96,165,250,0) 70%), linear-gradient(180deg, #0a1f52 0%, #08183d 34%, #050e24 66%, #020409 100%)";
@@ -101,29 +86,6 @@ export function AppHero({
         {children}
       </div>
     </section>
-  );
-}
-
-/** The black sheet with its drag handle, overlapping the bottom of the hero. */
-export function AppSheet({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "relative -mt-10 flex flex-1 flex-col gap-10 rounded-t-[2rem] bg-[linear-gradient(180deg,#121316_0%,#060607_20rem,#000_100%)] px-5 pt-3 pb-[calc(7rem+env(safe-area-inset-bottom))] shadow-[0_-1px_0_0_rgba(255,255,255,0.06)] sm:px-8",
-        className,
-      )}
-    >
-      <div className="flex justify-center" aria-hidden="true">
-        <span className="h-1 w-10 rounded-full bg-white/20" />
-      </div>
-      {children}
-    </div>
   );
 }
 

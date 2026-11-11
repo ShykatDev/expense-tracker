@@ -10,10 +10,9 @@ import { GoalCompleteDialog } from "@/components/goals/goal-complete-dialog";
 import { GoalDialog } from "@/components/goals/goal-dialog";
 import { SparkleBurst } from "@/components/goals/sparkle-burst";
 import { useGoals } from "@/components/goals/goals-provider";
+import { ExpandableSheet } from "@/components/layout/expandable-sheet";
 import {
   AppHero,
-  AppSheet,
-  AppShell,
   HeroAmount,
   RowIconButton,
   SheetButton,
@@ -152,105 +151,110 @@ export function GoalsView() {
   }
 
   return (
-    <AppShell>
-      <AppHero
-        label="Saved this month"
-        value={<HeroAmount value={savings} />}
-        showMonthPicker
-        action={{ label: "Add goal", onClick: openCreate }}
-      >
-        <p className="mt-1 text-xs text-white/55">
-          {activeCount === 0
-            ? "No active goals"
-            : `${fundedCount} of ${activeCount} active ${activeCount === 1 ? "goal" : "goals"} affordable`}
-        </p>
-      </AppHero>
-
-      <AppSheet>
-      <SheetSection
-        title="Your goals"
-        subtitle="Progress is measured against this month's savings"
-      >
-      {!isLoaded ? (
-        <Card className="gap-2 py-4">
-          {[0, 1, 2].map((index) => (
-            <div
-              key={index}
-              className="h-14 animate-pulse rounded-2xl bg-white/5"
-            />
-          ))}
-        </Card>
-      ) : rows.length === 0 ? (
-        <Card className="items-center justify-center gap-2 px-6 py-10 text-center">
-          <Target className="size-5 text-white/50" />
-          <p className="text-sm font-medium text-white">No goals yet</p>
-          <p className="text-xs text-white/50">
-            Add a goal and see how close your savings are to affording it.
-          </p>
-          <SheetButton className="mt-2" onClick={openCreate}>
-            <Target />
-            Add goal
-          </SheetButton>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-8">
-          {activeRows.length > 0 && (
-            <div className="flex flex-col gap-3">
-              {activeRows.map((row) => (
-                <GoalCard
-                  key={row.goal.id}
-                  goal={row.goal}
-                  funded={row.funded}
-                  progress={row.progress}
-                  onComplete={() => setCompleting(row.goal)}
-                  onEdit={() => {
-                    setEditing(row.goal);
-                    setDialogOpen(true);
-                  }}
-                  onDelete={() => setDeleting(row.goal)}
+    <>
+      <ExpandableSheet
+        hint="Swipe up for your goals"
+        previewDetails
+        hero={
+          <AppHero
+            label="Saved this month"
+            value={<HeroAmount value={savings} />}
+            showMonthPicker
+            action={{ label: "Add goal", onClick: openCreate }}
+          >
+            <p className="mt-1 text-xs text-white/55">
+              {activeCount === 0
+                ? "No active goals"
+                : `${fundedCount} of ${activeCount} active ${activeCount === 1 ? "goal" : "goals"} affordable`}
+            </p>
+          </AppHero>
+        }
+        details={
+          <SheetSection
+            title="Your goals"
+            subtitle="Progress is measured against this month's savings"
+          >
+          {!isLoaded ? (
+            <Card className="gap-2 py-4">
+              {[0, 1, 2].map((index) => (
+                <div
+                  key={index}
+                  className="h-14 animate-pulse rounded-2xl bg-white/5"
                 />
               ))}
-            </div>
+            </Card>
+          ) : rows.length === 0 ? (
+            <Card className="items-center justify-center gap-2 px-6 py-10 text-center">
+              <Target className="size-5 text-white/50" />
+              <p className="text-sm font-medium text-white">No goals yet</p>
+              <p className="text-xs text-white/50">
+                Add a goal and see how close your savings are to affording it.
+              </p>
+              <SheetButton className="mt-2" onClick={openCreate}>
+                <Target />
+                Add goal
+              </SheetButton>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-8">
+              {activeRows.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  {activeRows.map((row) => (
+                    <GoalCard
+                      key={row.goal.id}
+                      goal={row.goal}
+                      funded={row.funded}
+                      progress={row.progress}
+                      onComplete={() => setCompleting(row.goal)}
+                      onEdit={() => {
+                        setEditing(row.goal);
+                        setDialogOpen(true);
+                      }}
+                      onDelete={() => setDeleting(row.goal)}
+                    />
+                  ))}
+                </div>
           )}
 
-          {doneRows.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <h3 className="px-1 text-xs font-medium text-white/50">Completed</h3>
-              <Card className="gap-0 py-1.5">
-                {doneRows.map((row) => (
-                  <div key={row.goal.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8 text-white/80">
-                      <GoalIcon iconKey={row.goal.iconKey} className="size-4" />
-                      <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-[#a9c4ff] text-[#0a1f52] ring-2 ring-[#141518]">
-                        <Check className="size-2.5" strokeWidth={3} />
-                      </span>
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm text-white/85">{row.goal.label}</span>
-                      <span className="block text-xs tabular-nums text-white/50">
-                        {formatCurrency(row.goal.targetAmount)}
-                      </span>
-                    </span>
-                    <SheetButton
-                      onClick={() => {
-                        reopenGoal(row.goal.id);
-                        toast.success(`Reopened ${row.goal.label}`);
-                      }}
-                    >
-                      Reopen
-                    </SheetButton>
-                    <RowIconButton aria-label={`Delete ${row.goal.label}`} onClick={() => setDeleting(row.goal)}>
-                      <Trash2 />
-                    </RowIconButton>
-                  </div>
-                ))}
-              </Card>
+              {doneRows.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="px-1 text-xs font-medium text-white/50">Completed</h3>
+                  <Card className="gap-0 py-1.5">
+                    {doneRows.map((row) => (
+                      <div key={row.goal.id} className="flex items-center gap-3 px-4 py-2.5">
+                        <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8 text-white/80">
+                          <GoalIcon iconKey={row.goal.iconKey} className="size-4" />
+                          <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-[#a9c4ff] text-[#0a1f52] ring-2 ring-[#141518]">
+                            <Check className="size-2.5" strokeWidth={3} />
+                          </span>
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm text-white/85">{row.goal.label}</span>
+                          <span className="block text-xs tabular-nums text-white/50">
+                            {formatCurrency(row.goal.targetAmount)}
+                          </span>
+                        </span>
+                        <SheetButton
+                          onClick={() => {
+                            reopenGoal(row.goal.id);
+                            toast.success(`Reopened ${row.goal.label}`);
+                          }}
+                        >
+                          Reopen
+                        </SheetButton>
+                        <RowIconButton aria-label={`Delete ${row.goal.label}`} onClick={() => setDeleting(row.goal)}>
+                          <Trash2 />
+                        </RowIconButton>
+                      </div>
+                    ))}
+                  </Card>
+                </div>
+          )}
             </div>
           )}
-        </div>
-      )}
-      </SheetSection>
-      </AppSheet>
+          </SheetSection>
+        }
+      />
 
       <SparkleBurst burst={sparkle} />
 
@@ -301,7 +305,7 @@ export function GoalsView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppShell>
+    </>
   );
 }
 

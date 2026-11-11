@@ -5,7 +5,7 @@
  */
 export default function EntryLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="relative z-0 flex min-h-dvh flex-col bg-white">
+    <div className="relative z-0 flex min-h-[calc(100dvh+var(--viewport-gap,0px))] flex-col bg-white">
       {children}
     </div>
   );

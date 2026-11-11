@@ -12,10 +12,9 @@ import { DateFilters } from "@/components/dashboard/date-filters";
 import { useMonthNav } from "@/components/dashboard/navbar";
 import { TransactionHistory } from "@/components/dashboard/transaction-history";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
+import { ExpandableSheet } from "@/components/layout/expandable-sheet";
 import {
   AppHero,
-  AppSheet,
-  AppShell,
   HeroAmount,
   SheetButton,
   SheetToggle,
@@ -86,91 +85,98 @@ export function HistoryView() {
   }
 
   return (
-    <AppShell>
-      <AppHero
-        label={isFiltered ? "Net for this view" : "All-time balance"}
-        value={<HeroAmount value={totals.balance} />}
-        action={{ label: "Add transaction", onClick: () => router.push("/transaction") }}
-      >
-        <p className="text-xs tabular-nums text-white/55">
-          {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"}
-        </p>
-        <HeroFigures income={totals.income} expense={totals.expense} />
-      </AppHero>
-
-      <AppSheet className="gap-6">
-        {/* Filters */}
-        <div className="flex flex-col gap-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-white/50" />
-            <input
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                resetPaging();
-              }}
-              placeholder="Search by category"
-              aria-label="Search transactions"
-              className="h-12 w-full rounded-full bg-white/6 pr-11 pl-11 text-sm text-white outline-none placeholder:text-white/50 focus:ring-1 focus:ring-white/20"
-            />
-            {query && (
-              <button
-                type="button"
-                aria-label="Clear search"
-                onClick={() => {
-                  setQuery("");
-                  resetPaging();
-                }}
-                className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white/50 hover:bg-white/10 hover:text-white"
-              >
-                <X className="size-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <SheetToggle
-              compact
-              label="Transaction type"
-              value={type}
-              options={TYPE_OPTIONS}
-              onChange={(next) => {
-                setType(next);
-                resetPaging();
-              }}
-            />
-            <DateFilters
-              compact
-              value={period}
-              onChange={(next) => {
-                setPeriod(next);
-                resetPaging();
-              }}
-            />
-          </div>
-        </div>
-
-        <TransactionHistory
-          transactions={shown}
-          customCategories={customCategories}
-          onEdit={(transaction) => router.push(`/transaction?edit=${transaction.id}`)}
-          onDelete={setDeleting}
-          emptyMessage={
-            transactions.length === 0
-              ? "No transactions yet. Tap + to add your first one."
-              : "Nothing matches these filters."
-          }
-        />
-
-        {filtered.length > visible && (
-          <SheetButton
-            className="self-center"
-            onClick={() => setVisible((count) => count + PAGE_SIZE)}
+    <>
+      <ExpandableSheet
+        hint="Swipe up for all transactions"
+        previewDetails
+        hero={
+          <AppHero
+            label={isFiltered ? "Net for this view" : "All-time balance"}
+            value={<HeroAmount value={totals.balance} />}
+            action={{ label: "Add transaction", onClick: () => router.push("/transaction") }}
           >
-            Show more ({filtered.length - visible} left)
-          </SheetButton>
+            <p className="text-xs tabular-nums text-white/55">
+              {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"}
+            </p>
+            <HeroFigures income={totals.income} expense={totals.expense} />
+          </AppHero>
+        }
+        peek={() => (
+            <div className="flex flex-col gap-4">
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-white/50" />
+                <input
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    resetPaging();
+                  }}
+                  placeholder="Search by category"
+                  aria-label="Search transactions"
+                  className="h-12 w-full rounded-full bg-white/6 pr-11 pl-11 text-sm text-white outline-none placeholder:text-white/50 focus:ring-1 focus:ring-white/20"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => {
+                      setQuery("");
+                      resetPaging();
+                    }}
+                    className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white/50 hover:bg-white/10 hover:text-white"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <SheetToggle
+                  compact
+                  label="Transaction type"
+                  value={type}
+                  options={TYPE_OPTIONS}
+                  onChange={(next) => {
+                    setType(next);
+                    resetPaging();
+                  }}
+                />
+                <DateFilters
+                  compact
+                  value={period}
+                  onChange={(next) => {
+                    setPeriod(next);
+                    resetPaging();
+                  }}
+                />
+              </div>
+            </div>
         )}
-      </AppSheet>
+        details={
+          <>
+            <TransactionHistory
+              transactions={shown}
+              customCategories={customCategories}
+              onEdit={(transaction) => router.push(`/transaction?edit=${transaction.id}`)}
+              onDelete={setDeleting}
+              emptyMessage={
+                transactions.length === 0
+                  ? "No transactions yet. Tap + to add your first one."
+                  : "Nothing matches these filters."
+          }
+            />
+
+            {filtered.length > visible && (
+              <SheetButton
+                className="self-center"
+                onClick={() => setVisible((count) => count + PAGE_SIZE)}
+              >
+                Show more ({filtered.length - visible} left)
+              </SheetButton>
+            )}
+          </>
+        }
+      />
 
       <ConfirmTransactionActionDialog
         open={deleting !== null}
@@ -182,6 +188,6 @@ export function HistoryView() {
         customCategories={customCategories}
         onConfirm={handleConfirmDelete}
       />
-    </AppShell>
+    </>
   );
 }
