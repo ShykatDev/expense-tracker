@@ -16,7 +16,10 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { EXPENSE_CATEGORIES, OTHER_CATEGORY_LABEL } from "@/lib/transactions";
+import {
+  OTHER_CATEGORY_LABEL,
+  type ResolvedCategory,
+} from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
 interface CustomRow {
@@ -27,9 +30,11 @@ interface CustomRow {
 
 export function ExpenseDrawer({
   onSubmit,
+  categories,
   hiddenCategories = [],
 }: {
   onSubmit: (entries: { category: string; amount: number }[]) => void;
+  categories: ResolvedCategory[];
   hiddenCategories?: string[];
 }) {
   const [open, setOpen] = React.useState(false);
@@ -38,10 +43,10 @@ export function ExpenseDrawer({
 
   const visibleCategories = React.useMemo(
     () =>
-      EXPENSE_CATEGORIES.filter(
+      categories.filter(
         (category) => !hiddenCategories.includes(category.key),
       ),
-    [hiddenCategories],
+    [categories, hiddenCategories],
   );
 
   function handleOpenChange(next: boolean) {
@@ -125,9 +130,9 @@ export function ExpenseDrawer({
       <DrawerTrigger
         render={
           <Button
-            size="sm"
+            size="lg"
             aria-label="Add expense"
-            className="h-10 gap-1 border-rose-500/25 bg-rose-500/15 px-2.5 text-rose-400 active:scale-[0.98] hover:bg-rose-500/25"
+            className="gap-1 border-rose-500/25 bg-rose-500/15 text-rose-400 active:scale-[0.98] hover:bg-rose-500/25"
           />
         }
       >
@@ -195,7 +200,7 @@ export function ExpenseDrawer({
                   </div>
                   <Button
                     variant="outline"
-                    size="icon"
+                    size="icon-sm"
                     className="shrink-0"
                     onClick={() => toggleCategory(category.key)}
                   >
@@ -236,7 +241,7 @@ export function ExpenseDrawer({
                   </div>
                   <Button
                     variant="outline"
-                    size="icon"
+                    size="icon-sm"
                     className="shrink-0"
                     onClick={() => removeCustomRow(row.id)}
                   >
@@ -262,7 +267,9 @@ export function ExpenseDrawer({
             <Check className="size-4" />
             Save expense
           </Button>
-          <DrawerClose render={<Button variant="outline" className="gap-2" />}>
+          <DrawerClose
+            render={<Button variant="outline" size="lg" className="gap-2" />}
+          >
             <X className="size-4" />
             Cancel
           </DrawerClose>

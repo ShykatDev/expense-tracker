@@ -8,7 +8,6 @@ import {
   Home,
   Landmark,
   PiggyBank,
-  Receipt,
   ShoppingCart,
   TrendingUp,
   Wallet,
@@ -31,6 +30,37 @@ export interface CategoryOption {
   key: string;
   label: string;
   icon: LucideIcon;
+}
+
+/**
+ * A user-defined category. Persisted to localStorage, so the icon is stored
+ * as a string key into CATEGORY_ICONS (icon components are not JSON
+ * serializable).
+ */
+export interface CustomCategory {
+  /** Stable uuid. Never changes, even when the label is renamed. */
+  id: string;
+  /**
+   * Immutable key used by the category visibility system, which stores hidden
+   * categories by key. Deriving it from the id keeps the hidden flag working
+   * across renames.
+   */
+  key: string;
+  type: TransactionType;
+  label: string;
+  iconKey: string;
+  createdAt: number;
+}
+
+/** A built-in or custom category normalized into a single renderable shape. */
+export interface ResolvedCategory {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  iconKey: string;
+  source: "builtin" | "custom";
+  /** Present only for custom categories. */
+  id?: string;
 }
 
 export const EXPENSE_CATEGORIES: CategoryOption[] = [
@@ -57,15 +87,17 @@ export const OTHER_CATEGORY_LABEL = "Other";
 export const CATEGORY_VISIBILITY_STORAGE_KEY =
   "expense-tracker:hidden-categories";
 
-export function getCategoryIcon(
-  type: TransactionType,
-  category: string,
-): LucideIcon {
-  const list = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-  return list.find((c) => c.label === category)?.icon ?? Receipt;
-}
+export const CUSTOM_CATEGORIES_STORAGE_KEY =
+  "expense-tracker:custom-categories";
 
 export const STORAGE_KEY = "expense-tracker:transactions";
+
+export const TARGETS_STORAGE_KEY = "expense-tracker:category-targets";
+
+export const GOALS_STORAGE_KEY = "expense-tracker:goals";
+
+export const GOAL_COMPLETIONS_STORAGE_KEY =
+  "expense-tracker:goal-completions";
 
 export function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {

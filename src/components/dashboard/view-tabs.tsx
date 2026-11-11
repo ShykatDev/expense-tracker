@@ -24,7 +24,7 @@ export function ViewTabs({
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            "rounded-full px-4 py-1.5 text-xs font-medium transition-all",
+            "h-8 rounded-full px-4 text-xs font-medium transition-all",
             value === option.value
               ? "bg-white/15 text-foreground shadow-[0_1px_0_0_rgba(255,255,255,0.1)_inset]"
               : "text-muted-foreground hover:bg-white/5 hover:text-foreground",

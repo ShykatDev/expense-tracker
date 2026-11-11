@@ -26,11 +26,9 @@ export function DateFilters({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger className="glass flex w-fit items-center rounded-full border border-white/10 p-1 text-xs font-medium transition-all animate-in fade-in slide-in-from-bottom-2 duration-500">
-        <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-1.5 text-foreground shadow-[0_1px_0_0_rgba(255,255,255,0.1)_inset]">
-          <ListFilter className="size-3.5" />
-          {current?.label}
-        </span>
+      <PopoverTrigger className="glass flex h-8 w-fit items-center gap-1.5 rounded-full border border-white/10 px-4 text-xs font-medium transition-all animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <ListFilter className="size-3.5" />
+        {current?.label}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-44">
         <div className="flex flex-col gap-0.5">
@@ -43,7 +41,7 @@ export function DateFilters({
                 setOpen(false);
               }}
               className={cn(
-                "flex items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-medium transition-colors",
+                "flex h-8 items-center justify-between rounded-lg px-2.5 text-left text-xs font-medium transition-colors",
                 value === option.value
                   ? "bg-white/15 text-foreground"
                   : "text-muted-foreground hover:bg-white/5 hover:text-foreground",

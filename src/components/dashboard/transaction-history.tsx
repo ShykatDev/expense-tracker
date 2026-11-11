@@ -4,20 +4,23 @@ import { Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { resolveCategoryIcon } from "@/lib/categories";
 import {
   formatCurrency,
-  getCategoryIcon,
   groupTransactionsByDay,
+  type CustomCategory,
   type Transaction,
 } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
 export function TransactionHistory({
   transactions,
+  customCategories = [],
   onEdit,
   onDelete,
 }: {
   transactions: Transaction[];
+  customCategories?: CustomCategory[];
   onEdit: (transaction: Transaction) => void;
   onDelete: (transaction: Transaction) => void;
 }) {
@@ -40,7 +43,11 @@ export function TransactionHistory({
           </span>
           <Card className="gap-0 py-1">
             {group.items.map((transaction, index) => {
-              const Icon = getCategoryIcon(transaction.type, transaction.category);
+              const Icon = resolveCategoryIcon(
+                transaction.type,
+                transaction.category,
+                customCategories,
+              );
               return (
                 <div
                   key={transaction.id}
@@ -70,7 +77,7 @@ export function TransactionHistory({
                   <div className="flex shrink-0 gap-1">
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon-sm"
                       aria-label="Edit entry"
                       onClick={() => onEdit(transaction)}
                     >
@@ -78,7 +85,7 @@ export function TransactionHistory({
                     </Button>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon-sm"
                       aria-label="Delete entry"
                       onClick={() => onDelete(transaction)}
                     >

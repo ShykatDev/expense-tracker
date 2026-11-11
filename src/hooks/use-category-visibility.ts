@@ -7,7 +7,7 @@ import {
   type TransactionType,
 } from "@/lib/transactions"
 
-type HiddenCategories = Record<TransactionType, string[]>
+export type HiddenCategories = Record<TransactionType, string[]>
 
 const EMPTY: HiddenCategories = { income: [], expense: [] }
 

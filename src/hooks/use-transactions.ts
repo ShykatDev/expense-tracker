@@ -31,14 +31,14 @@ export function useTransactions() {
   const addTransactions = React.useCallback(
     (entries: { type: TransactionType; category: string; amount: number }[]) => {
       const now = Date.now()
-      setTransactions((prev) => [
-        ...entries.map((entry, index) => ({
-          id: `${now}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-          createdAt: now,
-          ...entry,
-        })),
-        ...prev,
-      ])
+      const created: Transaction[] = entries.map((entry, index) => ({
+        id: `${now}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: now,
+        ...entry,
+      }))
+      setTransactions((prev) => [...created, ...prev])
+      // Returning the created rows lets callers reference their ids.
+      return created
     },
     []
   )
@@ -56,11 +56,31 @@ export function useTransactions() {
     [],
   )
 
+  /**
+   * Rewrites the category label on past entries when a category is renamed.
+   * Without this the history rows, the category icons and any spending
+   * target would keep pointing at a label that no longer exists.
+   */
+  const renameCategory = React.useCallback(
+    (type: TransactionType, fromLabel: string, toLabel: string) => {
+      if (fromLabel === toLabel) return
+      setTransactions((prev) =>
+        prev.map((t) =>
+          t.type === type && t.category === fromLabel
+            ? { ...t, category: toLabel }
+            : t,
+        ),
+      )
+    },
+    [],
+  )
+
   return {
     transactions,
     addTransactions,
     removeTransaction,
     updateTransaction,
+    renameCategory,
     isLoaded,
   }
 }

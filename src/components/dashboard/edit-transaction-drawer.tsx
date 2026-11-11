@@ -45,8 +45,6 @@ export function EditTransactionDrawer({
       return;
     }
     onSave(transaction.id, { category: category.trim(), amount: numericAmount });
-    toast.success("Entry updated");
-    onOpenChange(false);
   }
 
   return (
@@ -73,11 +71,13 @@ export function EditTransactionDrawer({
           </div>
         </div>
         <DrawerFooter>
-          <Button className="gap-2" onClick={handleSave}>
+          <Button size="lg" className="gap-2" onClick={handleSave}>
             <Check className="size-4" />
             Save changes
           </Button>
-          <DrawerClose render={<Button variant="outline" className="gap-2" />}>
+          <DrawerClose
+            render={<Button variant="outline" size="lg" className="gap-2" />}
+          >
             <X className="size-4" />
             Cancel
           </DrawerClose>

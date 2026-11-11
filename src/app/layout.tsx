@@ -1,3 +1,7 @@
+import { CategoriesProvider } from "@/components/categories/categories-provider";
+import { TransactionsProvider } from "@/components/dashboard/transactions-provider";
+import { GoalsProvider } from "@/components/goals/goals-provider";
+import { TargetsProvider } from "@/components/targets/targets-provider";
 import { Toaster } from "@/components/ui/sonner";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
@@ -45,7 +49,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="absolute top-1/3 -right-32 size-112 rounded-full bg-white/5 blur-2xl" />
           <div className="absolute bottom-0 left-1/4 size-80 rounded-full bg-white/6 blur-2xl" />
         </div>
-        {children}
+        <CategoriesProvider>
+          <TransactionsProvider>
+            <TargetsProvider>
+              <GoalsProvider>{children}</GoalsProvider>
+            </TargetsProvider>
+          </TransactionsProvider>
+        </CategoriesProvider>
         <Toaster theme="dark" position="top-center" offset={{ top: 80 }} />
       </body>
     </html>

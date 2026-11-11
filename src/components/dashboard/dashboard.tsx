@@ -3,8 +3,8 @@
 import * as React from "react";
 import { toast } from "sonner";
 
-import { useCategoryVisibility } from "@/hooks/use-category-visibility";
-import { useTransactions } from "@/hooks/use-transactions";
+import { useCategories } from "@/components/categories/categories-provider";
+import { useTargets } from "@/components/targets/targets-provider";
 import {
   computeCategoryTotals,
   computeTotals,
@@ -12,16 +12,19 @@ import {
   type DateRangeFilter,
   type Transaction,
 } from "@/lib/transactions";
+import { monthKey } from "@/lib/targets";
 
 import { BalanceOverviewCard } from "./balance-overview-card";
-import { BalanceTrend } from "./balance-trend";
+import { usePublishBalance } from "./balance-summary-store";
+import { ConfirmTransactionActionDialog } from "./confirm-transaction-action";
 import { DateFilters } from "./date-filters";
 import { EditTransactionDrawer } from "./edit-transaction-drawer";
-import { ExpenseDrawer } from "./expense-drawer";
-import { IncomeDrawer } from "./income-drawer";
-import { Navbar } from "./navbar";
+import { useMonthNav } from "./navbar";
+import { SavingsCard } from "./savings-card";
 import { StatCards } from "./stat-cards";
+import { TargetSummaryCard } from "./target-summary-card";
 import { TransactionHistory } from "./transaction-history";
+import { useTransactions } from "./transactions-provider";
 import { ViewTabs, type DashboardView } from "./view-tabs";
 
 function startOfMonth(monthOffset: number) {
@@ -30,31 +33,27 @@ function startOfMonth(monthOffset: number) {
 }
 
 export function Dashboard() {
-  const {
-    transactions,
-    addTransactions,
-    removeTransaction,
-    updateTransaction,
-  } = useTransactions();
-  const { hidden: hiddenCategories, toggleCategory } = useCategoryVisibility();
+  const { transactions } = useTransactions();
+  const { monthAnchor, monthLabel } = useMonthNav();
   const [filter, setFilter] = React.useState<DateRangeFilter>("month");
-  const [monthOffset, setMonthOffset] = React.useState(0);
-  const [view, setView] = React.useState<DashboardView>("overview");
-  const [editingTransaction, setEditingTransaction] =
-    React.useState<Transaction | null>(null);
 
-  const monthAnchor = React.useMemo(
-    () => startOfMonth(monthOffset),
-    [monthOffset],
-  );
-  const monthLabel = React.useMemo(
-    () =>
-      monthAnchor.toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      }),
-    [monthAnchor],
-  );
+  const monthOffset = React.useMemo(() => {
+    const now = new Date();
+    return (
+      (monthAnchor.getFullYear() - now.getFullYear()) * 12 +
+      (monthAnchor.getMonth() - now.getMonth())
+    );
+  }, [monthAnchor]);
+
+  // Picking a month in the navbar always scopes the dashboard to that month.
+  const isFirstMonthRender = React.useRef(true);
+  React.useEffect(() => {
+    if (isFirstMonthRender.current) {
+      isFirstMonthRender.current = false;
+      return;
+    }
+    setFilter("month");
+  }, [monthAnchor]);
 
   const filteredTransactions = React.useMemo(
     () =>
@@ -68,10 +67,27 @@ export function Dashboard() {
     () => computeTotals(filteredTransactions),
     [filteredTransactions],
   );
-  const categoryTotals = React.useMemo(
-    () => computeCategoryTotals(filteredTransactions),
-    [filteredTransactions],
+
+  // Targets are monthly caps, so they are always measured against the
+  // navbar's month regardless of which date chip the user picked.
+  const monthTransactions = React.useMemo(
+    () =>
+      transactions.filter((t) =>
+        isWithinDateRange(t.createdAt, "month", monthAnchor),
+      ),
+    [transactions, monthAnchor],
   );
+
+  const spentByCategoryLabel = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const transaction of monthTransactions) {
+      if (transaction.type !== "expense") continue;
+      map[transaction.category] =
+        (map[transaction.category] ?? 0) + transaction.amount;
+    }
+    return map;
+  }, [monthTransactions]);
+
   const previousMonthAnchor = React.useMemo(
     () => startOfMonth(monthOffset - 1),
     [monthOffset],
@@ -116,6 +132,13 @@ export function Dashboard() {
     [previousTransactions],
   );
 
+  // Savings is a running total across every transaction, so it is always
+  // computed from the full ledger rather than the filtered view.
+  const lifetimeTotals = React.useMemo(
+    () => computeTotals(transactions),
+    [transactions],
+  );
+
   const balanceChangePercent = React.useMemo(() => {
     if (filter === "all") return null;
     const diff = totals.balance - previousTotals.balance;
@@ -124,27 +147,94 @@ export function Dashboard() {
     return totals.balance === 0 ? 0 : 100;
   }, [filter, totals.balance, previousTotals.balance]);
 
-  function handlePrevMonth() {
-    setFilter("month");
-    setMonthOffset((prev) => prev - 1);
+  const balanceSummary = React.useMemo(
+    () => ({
+      balance: totals.balance,
+      changePercent: balanceChangePercent,
+    }),
+    [totals.balance, balanceChangePercent],
+  );
+
+  usePublishBalance(balanceSummary);
+
+  return (
+    <DashboardContent
+      filter={filter}
+      onFilterChange={setFilter}
+      transactions={filteredTransactions}
+      totals={totals}
+      lifetimeTotals={lifetimeTotals}
+      spentByCategoryLabel={spentByCategoryLabel}
+      monthLabel={monthLabel}
+      monthKey={monthKey(monthAnchor)}
+    />
+  );
+}
+
+function DashboardContent({
+  filter,
+  onFilterChange,
+  transactions: filteredTransactions,
+  totals,
+  lifetimeTotals,
+  spentByCategoryLabel,
+  monthLabel,
+  monthKey: currentMonthKey,
+}: {
+  filter: DateRangeFilter;
+  onFilterChange: (filter: DateRangeFilter) => void;
+  transactions: Transaction[];
+  totals: { income: number; expense: number; balance: number };
+  lifetimeTotals: { income: number; expense: number; balance: number };
+  spentByCategoryLabel: Record<string, number>;
+  monthLabel: string;
+  monthKey: string;
+}) {
+  const { transactions, removeTransaction, updateTransaction } =
+    useTransactions();
+  const { categories } = useCategories();
+  const { targets } = useTargets();
+  const [view, setView] = React.useState<DashboardView>("overview");
+  const [editingTransaction, setEditingTransaction] =
+    React.useState<Transaction | null>(null);
+  const [pendingUpdate, setPendingUpdate] = React.useState<{
+    transaction: Transaction;
+    category: string;
+    amount: number;
+  } | null>(null);
+  const [deletingTransaction, setDeletingTransaction] =
+    React.useState<Transaction | null>(null);
+
+  const categoryTotals = React.useMemo(
+    () => computeCategoryTotals(filteredTransactions),
+    [filteredTransactions],
+  );
+
+  const allCustomCategories = React.useMemo(
+    () => [...categories.income, ...categories.expense],
+    [categories.income, categories.expense],
+  );
+
+  function handleConfirmUpdate() {
+    if (!pendingUpdate) return;
+    updateTransaction(pendingUpdate.transaction.id, {
+      category: pendingUpdate.category,
+      amount: pendingUpdate.amount,
+    });
+    toast.success("Entry updated");
+    setPendingUpdate(null);
   }
 
-  function handleNextMonth() {
-    setFilter("month");
-    setMonthOffset((prev) => prev + 1);
+  function handleConfirmDelete() {
+    if (!deletingTransaction) return;
+    removeTransaction(deletingTransaction.id);
+    toast.success(`Deleted ${deletingTransaction.type} entry`);
+    setDeletingTransaction(null);
   }
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-8 py-3 pb-28">
-        <Navbar
-          monthLabel={monthLabel}
-          onPrevMonth={handlePrevMonth}
-          onNextMonth={handleNextMonth}
-          hiddenCategories={hiddenCategories}
-          onToggleCategory={toggleCategory}
-        />
-
+      <div className="flex flex-1 flex-col gap-8 pb-28">
         <header className="flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
           <h1 className="text-2xl font-semibold tracking-tight">
             Expense Tracker
@@ -156,27 +246,37 @@ export function Dashboard() {
 
         <div className="flex items-center justify-between gap-3">
           <ViewTabs value={view} onChange={setView} />
-          <DateFilters value={filter} onChange={setFilter} />
+          <DateFilters value={filter} onChange={onFilterChange} />
         </div>
 
         {view === "overview" ? (
           <section className="flex flex-col gap-4">
             <StatCards income={totals.income} expense={totals.expense} />
+            <SavingsCard
+              savings={lifetimeTotals.balance}
+              income={lifetimeTotals.income}
+              expense={lifetimeTotals.expense}
+            />
             <BalanceOverviewCard
               balance={totals.balance}
               income={totals.income}
               expense={totals.expense}
               data={categoryTotals}
             />
+            <TargetSummaryCard
+              monthLabel={monthLabel}
+              monthKey={currentMonthKey}
+              spentByCategoryLabel={spentByCategoryLabel}
+              targets={targets}
+              customCategories={allCustomCategories}
+            />
           </section>
         ) : (
           <TransactionHistory
             transactions={filteredTransactions}
+            customCategories={allCustomCategories}
             onEdit={setEditingTransaction}
-            onDelete={(transaction) => {
-              removeTransaction(transaction.id);
-              toast.success(`Deleted ${transaction.type} entry`);
-            }}
+            onDelete={setDeletingTransaction}
           />
         )}
       </div>
@@ -186,35 +286,37 @@ export function Dashboard() {
         onOpenChange={(open) => {
           if (!open) setEditingTransaction(null);
         }}
-        onSave={updateTransaction}
+        onSave={(id, patch) => {
+          const transaction = transactions.find((t) => t.id === id);
+          if (!transaction) return;
+          setPendingUpdate({ transaction, ...patch });
+          setEditingTransaction(null);
+        }}
       />
 
-      <div className="fixed inset-x-0 bottom-0 z-30 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 md:px-16 lg:px-96 xl:px-96 2xl:px-96">
-        <section className="solid-panel mx-auto flex max-w-xl items-center gap-2 rounded-2xl border border-white/10 p-2.5 shadow-[0_1px_0_0_rgba(255,255,255,0.08)_inset,0_8px_30px_-8px_rgba(0,0,0,0.6)]">
-          <BalanceTrend
-            balance={totals.balance}
-            changePercent={balanceChangePercent}
-          />
-          <div className="flex shrink-0 gap-1.5">
-            <IncomeDrawer
-              onSubmit={(entries) =>
-                addTransactions(
-                  entries.map((entry) => ({ ...entry, type: "income" })),
-                )
-              }
-              hiddenCategories={hiddenCategories.income}
-            />
-            <ExpenseDrawer
-              onSubmit={(entries) =>
-                addTransactions(
-                  entries.map((entry) => ({ ...entry, type: "expense" })),
-                )
-              }
-              hiddenCategories={hiddenCategories.expense}
-            />
-          </div>
-        </section>
-      </div>
+      <ConfirmTransactionActionDialog
+        open={pendingUpdate !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingUpdate(null);
+        }}
+        action="update"
+        transaction={pendingUpdate?.transaction ?? null}
+        nextCategory={pendingUpdate?.category}
+        nextAmount={pendingUpdate?.amount}
+        customCategories={allCustomCategories}
+        onConfirm={handleConfirmUpdate}
+      />
+
+      <ConfirmTransactionActionDialog
+        open={deletingTransaction !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingTransaction(null);
+        }}
+        action="delete"
+        transaction={deletingTransaction}
+        customCategories={allCustomCategories}
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 }
