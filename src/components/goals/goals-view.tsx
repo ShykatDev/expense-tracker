@@ -4,10 +4,19 @@ import { Check, Pencil, Target, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
+import { useMonthNav } from "@/components/dashboard/navbar";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { GoalCompleteDialog } from "@/components/goals/goal-complete-dialog";
 import { GoalDialog } from "@/components/goals/goal-dialog";
 import { useGoals } from "@/components/goals/goals-provider";
+import {
+  AppHero,
+  AppSheet,
+  AppShell,
+  RowIconButton,
+  SheetButton,
+  SheetSection,
+} from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,19 +40,30 @@ import {
   type GoalCompletionSource,
 } from "@/lib/goals";
 import { computeSavings } from "@/lib/savings";
-import { formatCurrency } from "@/lib/transactions";
+import { formatCurrency, isWithinDateRange } from "@/lib/transactions";
 
 export function GoalsView() {
   const { goals, addGoal, updateGoal, removeGoal, completeGoal, reopenGoal, isLoaded } =
     useGoals();
   const { transactions, addTransactions } = useTransactions();
+  const { monthAnchor } = useMonthNav();
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Goal | null>(null);
   const [deleting, setDeleting] = React.useState<Goal | null>(null);
   const [completing, setCompleting] = React.useState<Goal | null>(null);
 
-  const savings = React.useMemo(() => computeSavings(transactions), [transactions]);
+  // Savings is measured against the navbar's month, so the goals page and
+  // the dashboard always show the same figure.
+  const savings = React.useMemo(
+    () =>
+      computeSavings(
+        transactions.filter((t) =>
+          isWithinDateRange(t.createdAt, "month", monthAnchor),
+        ),
+      ),
+    [transactions, monthAnchor],
+  );
 
   const rows = React.useMemo(
     () =>
@@ -58,6 +78,15 @@ export function GoalsView() {
       }),
     [goals, savings],
   );
+
+  const activeRows = rows.filter((row) => row.goal.status === "active");
+  const activeCount = activeRows.length;
+  const fundedCount = activeRows.filter((row) => row.funded).length;
+
+  function openCreate() {
+    setEditing(null);
+    setDialogOpen(true);
+  }
 
   function handleSubmit(input: {
     label: string;
@@ -115,34 +144,25 @@ export function GoalsView() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 pb-28 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Goals</h1>
-        <p className="text-sm text-muted-foreground">
-          Save toward something you want to buy.
+    <AppShell>
+      <AppHero
+        label="Saved this month"
+        value={formatCurrency(savings)}
+        showMonthPicker
+        action={{ label: "Add goal", onClick: openCreate }}
+      >
+        <p className="mt-1 text-xs text-white/55">
+          {activeCount === 0
+            ? "No active goals"
+            : `${fundedCount} of ${activeCount} active ${activeCount === 1 ? "goal" : "goals"} affordable`}
         </p>
-      </header>
+      </AppHero>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">
-          Savings:{" "}
-          <span className="font-medium tabular-nums text-foreground">
-            {formatCurrency(savings)}
-          </span>
-        </p>
-        <Button
-          size="sm"
-          className="gap-1.5"
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Target className="size-4" />
-          Add goal
-        </Button>
-      </div>
-
+      <AppSheet>
+      <SheetSection
+        title="Your goals"
+        subtitle="Progress is measured against this month's savings"
+      >
       {!isLoaded ? (
         <Card className="gap-2 py-4">
           {[0, 1, 2].map((index) => (
@@ -153,27 +173,20 @@ export function GoalsView() {
           ))}
         </Card>
       ) : rows.length === 0 ? (
-        <Card className="items-center justify-center gap-2 py-10 text-center">
-          <Target className="size-5 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">No goals yet</p>
-          <p className="text-xs text-muted-foreground">
+        <Card className="items-center justify-center gap-2 px-6 py-10 text-center">
+          <Target className="size-5 text-white/45" />
+          <p className="text-sm font-medium text-white">No goals yet</p>
+          <p className="text-xs text-white/45">
             Add a goal and see how close your savings are to affording it.
           </p>
-          <Button
-            size="sm"
-            className="mt-1 gap-1.5"
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Target className="size-4" />
+          <SheetButton className="mt-2" onClick={openCreate}>
+            <Target />
             Add goal
-          </Button>
+          </SheetButton>
         </Card>
       ) : (
-        <Card className="gap-0 py-1">
-          {rows.map((row, index) => {
+        <div className="flex flex-col gap-2">
+          {rows.map((row) => {
             const Icon = getCategoryIconByKey(row.goal.iconKey);
             const daysLeft = row.goal.targetDate
               ? daysUntil(row.goal.targetDate)
@@ -183,12 +196,10 @@ export function GoalsView() {
             return (
               <div
                 key={row.goal.id}
-                className={`flex flex-col gap-2 px-4 py-3 ${
-                  index !== rows.length - 1 ? "border-b border-white/10" : ""
-                }`}
+                className="flex flex-col gap-3 rounded-3xl bg-white/6 p-4"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
                     <Icon className="size-4 text-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -224,52 +235,40 @@ export function GoalsView() {
                       )}
                     </div>
                   </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-                    {formatCurrency(savings)} /{" "}
-                    {formatCurrency(row.goal.targetAmount)}
-                  </span>
                   <div className="flex shrink-0 gap-1">
                     {isCompleted ? (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
+                      <RowIconButton
                         aria-label={`Reopen ${row.goal.label}`}
                         onClick={() => {
                           reopenGoal(row.goal.id);
                           toast.success(`Reopened ${row.goal.label}`);
                         }}
                       >
-                        <Check className="size-3.5" />
-                      </Button>
+                        <Check />
+                      </RowIconButton>
                     ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
+                      <RowIconButton
                         aria-label={`Complete ${row.goal.label}`}
                         onClick={() => setCompleting(row.goal)}
                       >
-                        <Check className="size-3.5" />
-                      </Button>
+                        <Check />
+                      </RowIconButton>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
+                    <RowIconButton
                       aria-label={`Edit ${row.goal.label}`}
                       onClick={() => {
                         setEditing(row.goal);
                         setDialogOpen(true);
                       }}
                     >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
+                      <Pencil />
+                    </RowIconButton>
+                    <RowIconButton
                       aria-label={`Delete ${row.goal.label}`}
                       onClick={() => setDeleting(row.goal)}
                     >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                      <Trash2 />
+                    </RowIconButton>
                   </div>
                 </div>
 
@@ -282,7 +281,7 @@ export function GoalsView() {
                             ? "bg-emerald-400"
                             : daysLeft !== null && daysLeft < 0
                               ? "bg-rose-400"
-                              : "bg-foreground"
+                              : "accent-gradient-x"
                         }
                       />
                     </ProgressTrack>
@@ -292,18 +291,25 @@ export function GoalsView() {
                   </span>
                 </div>
 
-                <p className="text-xs tabular-nums text-muted-foreground">
-                  {isCompleted
-                    ? "Completed"
-                    : row.funded
-                      ? "You can afford this"
-                      : `${formatCurrency(row.remaining)} to go`}
-                </p>
+                <div className="flex items-center justify-between gap-3 text-xs tabular-nums">
+                  <span className="text-white/45">
+                    {isCompleted
+                      ? "Completed"
+                      : row.funded
+                        ? "You can afford this"
+                        : `${formatCurrency(row.remaining)} to go`}
+                  </span>
+                  <span className="font-medium text-white/80">
+                    {formatCurrency(row.goal.targetAmount)}
+                  </span>
+                </div>
               </div>
             );
           })}
-        </Card>
+        </div>
       )}
+      </SheetSection>
+      </AppSheet>
 
       <GoalDialog
         key={editing?.id ?? "create"}
@@ -352,6 +358,6 @@ export function GoalsView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppShell>
   );
 }

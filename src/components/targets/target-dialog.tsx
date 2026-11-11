@@ -115,7 +115,7 @@ export function TargetDialog({
         <div className="flex flex-col gap-4">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Category</Label>
-            <div className="max-h-44 overflow-y-auto rounded-lg border border-white/10">
+            <div className="max-h-52 overflow-y-auto rounded-3xl bg-white/6">
               {categories.length === 0 ? (
                 <p className="px-3 py-2 text-xs text-muted-foreground">
                   No expense categories available.
@@ -127,9 +127,9 @@ export function TargetDialog({
                     type="button"
                     onClick={() => setCategoryKey(category.key)}
                     className={cn(
-                      "flex h-9 w-full items-center gap-2.5 px-3 text-left text-sm transition-colors",
+                      "flex h-12 w-full items-center gap-3 px-4 text-left text-sm transition-colors",
                       index !== categories.length - 1 &&
-                        "border-b border-white/10",
+                        "border-b border-white/6",
                       categoryKey === category.key
                         ? "bg-white/15 text-foreground"
                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
@@ -166,10 +166,10 @@ export function TargetDialog({
               type="button"
               onClick={() => setUseOverride((prev) => !prev)}
               className={cn(
-                "h-9 w-full rounded-lg border px-3 text-left text-sm font-medium transition-colors",
+                "h-11 w-full rounded-full px-4 text-left text-sm transition-colors",
                 useOverride
-                  ? "border-white/25 bg-white/15 text-foreground"
-                  : "border-white/10 bg-white/3 text-muted-foreground hover:bg-white/5 hover:text-foreground",
+                  ? "bg-white text-black"
+                  : "bg-white/6 text-white/60 hover:bg-white/10 hover:text-white",
               )}
             >
               {useOverride

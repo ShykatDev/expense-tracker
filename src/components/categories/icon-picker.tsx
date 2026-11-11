@@ -14,7 +14,7 @@ export function IconPicker({
   onChange: (key: string) => void;
 }) {
   return (
-    <div className="grid max-h-56 grid-cols-6 gap-1.5 overflow-y-auto rounded-xl border border-white/10 bg-white/3 p-2 sm:grid-cols-8">
+    <div className="grid max-h-56 grid-cols-6 gap-1.5 overflow-y-auto rounded-3xl bg-white/6 p-2.5 sm:grid-cols-8">
       {CATEGORY_ICON_KEYS.map((key) => {
         const Icon = getCategoryIconByKey(key);
         const selected = key === value;
@@ -26,10 +26,10 @@ export function IconPicker({
             aria-pressed={selected}
             onClick={() => onChange(key)}
             className={cn(
-              "flex size-9 items-center justify-center rounded-lg border transition-colors",
+              "flex size-9 items-center justify-center rounded-full transition-colors",
               selected
-                ? "border-white/25 bg-white/15 text-foreground"
-                : "border-transparent text-muted-foreground hover:bg-white/8 hover:text-foreground",
+                ? "bg-white text-black"
+                : " text-muted-foreground hover:bg-white/8 hover:text-foreground",
             )}
           >
             <Icon className="size-5" />

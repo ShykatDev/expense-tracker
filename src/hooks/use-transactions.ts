@@ -29,12 +29,22 @@ export function useTransactions() {
   }, [transactions, isLoaded])
 
   const addTransactions = React.useCallback(
-    (entries: { type: TransactionType; category: string; amount: number }[]) => {
+    (
+      entries: {
+        type: TransactionType
+        category: string
+        amount: number
+        /** Backdate the entry. Defaults to now. */
+        createdAt?: number
+      }[],
+    ) => {
       const now = Date.now()
       const created: Transaction[] = entries.map((entry, index) => ({
         id: `${now}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-        createdAt: now,
-        ...entry,
+        createdAt: entry.createdAt ?? now,
+        type: entry.type,
+        category: entry.category,
+        amount: entry.amount,
       }))
       setTransactions((prev) => [...created, ...prev])
       // Returning the created rows lets callers reference their ids.
@@ -48,7 +58,7 @@ export function useTransactions() {
   }, [])
 
   const updateTransaction = React.useCallback(
-    (id: string, patch: Partial<Pick<Transaction, "category" | "amount">>) => {
+    (id: string, patch: Partial<Pick<Transaction, "category" | "amount" | "type" | "createdAt">>) => {
       setTransactions((prev) =>
         prev.map((t) => (t.id === id ? { ...t, ...patch } : t)),
       )

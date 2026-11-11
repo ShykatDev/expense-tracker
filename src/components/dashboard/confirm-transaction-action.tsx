@@ -77,8 +77,8 @@ export function ConfirmTransactionActionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10">
+        <div className="flex items-center gap-3 rounded-3xl bg-white/6 p-4">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
             {transaction && (
               <CategoryIcon
                 type={transaction.type}

@@ -4,10 +4,10 @@ import * as React from "react";
 import {
   CalendarDays,
   Check,
-  ChevronLeft,
-  ChevronRight,
+  History,
   LayoutDashboard,
   Menu,
+  Settings,
   Tags,
   Target,
 } from "lucide-react";
@@ -35,8 +35,6 @@ function startOfMonth(monthOffset: number) {
 interface MonthNavContextValue {
   monthAnchor: Date;
   monthLabel: string;
-  goToPrevMonth: () => void;
-  goToNextMonth: () => void;
   goToMonth: (offset: number) => void;
 }
 
@@ -72,8 +70,6 @@ export function MonthNavProvider({ children }: { children: React.ReactNode }) {
     () => ({
       monthAnchor,
       monthLabel,
-      goToPrevMonth: () => setMonthOffset((prev) => prev - 1),
-      goToNextMonth: () => setMonthOffset((prev) => prev + 1),
       goToMonth: (offset: number) => setMonthOffset(offset),
     }),
     [monthAnchor, monthLabel],
@@ -87,49 +83,30 @@ export function MonthNavProvider({ children }: { children: React.ReactNode }) {
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/categories", label: "Categories", icon: Tags },
+  { href: "/history", label: "History", icon: History },
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 /**
  * The navbar is the only persistent chrome across routes, so it doubles as the
  * app's navigation: a menu button opens a sidebar with the route list, and the
- * month stepper sits next to the title.
+ * month picker sits on the right.
  */
 export function Navbar() {
   const monthNav = React.useContext(MonthNavContext);
   const pathname = usePathname();
 
+  // The dashboard carries its own header inside the blue hero.
+  if (pathname === "/") return null;
+
   return (
     <div className="solid-panel sticky top-4 z-20 mb-10 flex items-center gap-3 rounded-2xl border border-white/10 px-3 py-2 shadow-[0_1px_0_0_rgba(255,255,255,0.08)_inset,0_8px_30px_-12px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-top-2 duration-500">
       <AppSidebar pathname={pathname} />
 
-      {monthNav && (
-        <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 rounded-full"
-            onClick={monthNav.goToPrevMonth}
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
+      <div className="min-w-0 flex-1" />
 
-          <MonthPicker />
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 rounded-full"
-            onClick={monthNav.goToNextMonth}
-            aria-label="Next month"
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-      )}
-
-      <div className="hidden size-8 shrink-0 sm:block" aria-hidden />
+      {monthNav && <MonthPicker />}
     </div>
   );
 }
@@ -139,7 +116,7 @@ export function Navbar() {
  * user can reach a distant month in one click instead of stepping through
  * arrows.
  */
-function MonthPicker() {
+export function MonthPicker({ className }: { className?: string }) {
   const monthNav = React.useContext(MonthNavContext);
   const [open, setOpen] = React.useState(false);
 
@@ -171,14 +148,17 @@ function MonthPicker() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        className="flex h-8 min-w-28 items-center justify-center gap-1.5 rounded-full bg-white/10 px-3 text-sm font-medium tabular-nums transition-colors hover:bg-white/15"
+        className={cn(
+          "flex h-8 min-w-28 items-center justify-center gap-1.5 rounded-full bg-white/10 px-3 text-sm font-medium tabular-nums transition-colors hover:bg-white/15",
+          className,
+        )}
         aria-label="Choose month"
       >
         <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" />
         <span className="truncate">{monthNav.monthLabel}</span>
       </PopoverTrigger>
 
-      <PopoverContent align="center" className="w-48">
+      <PopoverContent align="end" className="w-48">
         <div className="flex flex-col gap-0.5">
           {months.map((month) => (
             <button
@@ -189,7 +169,7 @@ function MonthPicker() {
                 setOpen(false);
               }}
               className={cn(
-                "flex h-8 items-center justify-between rounded-lg px-2.5 text-left text-xs font-medium transition-colors",
+                "flex h-9 items-center justify-between rounded-2xl px-3 text-left text-xs font-medium transition-colors",
                 month.offset === currentOffset
                   ? "bg-white/15 text-foreground"
                   : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
@@ -207,7 +187,13 @@ function MonthPicker() {
   );
 }
 
-function AppSidebar({ pathname }: { pathname: string | null }) {
+export function AppSidebar({
+  pathname,
+  triggerClassName,
+}: {
+  pathname: string | null;
+  triggerClassName?: string;
+}) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -222,7 +208,7 @@ function AppSidebar({ pathname }: { pathname: string | null }) {
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 shrink-0 rounded-full"
+            className={cn("size-8 shrink-0 rounded-full", triggerClassName)}
             aria-label="Open navigation menu"
           />
         }
@@ -248,6 +234,7 @@ function AppSidebar({ pathname }: { pathname: string | null }) {
             return (
               <DrawerClose
                 key={item.href}
+                nativeButton={false}
                 render={
                   <Link
                     href={item.href}

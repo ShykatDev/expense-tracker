@@ -1,16 +1,15 @@
 import { BalanceSummaryProvider } from "@/components/dashboard/balance-summary-store";
-import { BottomActionBar } from "@/components/dashboard/bottom-action-bar";
-import { MonthNavProvider, Navbar } from "@/components/dashboard/navbar";
+import { MonthNavProvider } from "@/components/dashboard/navbar";
 
+/**
+ * Every app page draws its own hero and sheet (see `AppShell`), so the layout
+ * only centres a phone-width column and hosts the shared month state.
+ */
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="flex w-full flex-1 flex-col px-4 sm:px-8 md:px-16 lg:px-96 xl:px-96 2xl:px-96">
+    <div className="mx-auto flex w-full max-w-xl flex-1 flex-col md:py-6">
       <BalanceSummaryProvider>
-        <MonthNavProvider>
-          <Navbar />
-          {children}
-        </MonthNavProvider>
-        <BottomActionBar />
+        <MonthNavProvider>{children}</MonthNavProvider>
       </BalanceSummaryProvider>
     </div>
   );

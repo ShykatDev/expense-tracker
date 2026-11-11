@@ -154,6 +154,20 @@
     background-color: rgba(14, 14, 16, 0.92);
   }
 
+  /*
+   * The hero's navy-to-blue gradient, reused as the accent for highlighted
+   * bars and progress fills so the sheet picks up the hero's colour.
+   * Vertical for chart bars (bright at the top, navy at the base) and
+   * horizontal for progress bars (navy at the start, brightening to the end).
+   */
+  .accent-gradient {
+    background-image: linear-gradient(180deg, #4b7ad6 0%, #2a55b0 45%, #12306f 100%);
+  }
+
+  .accent-gradient-x {
+    background-image: linear-gradient(90deg, #12306f 0%, #2a55b0 55%, #4b7ad6 100%);
+  }
+
   .glass-glow::before {
     content: "";
     position: absolute;

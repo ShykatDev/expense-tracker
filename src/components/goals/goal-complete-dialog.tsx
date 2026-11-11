@@ -72,10 +72,10 @@ export function GoalCompleteDialog({
             type="button"
             onClick={() => setSource("savings")}
             className={cn(
-              "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors",
+              "flex items-start gap-3 rounded-3xl p-4 text-left ring-1 transition-colors",
               source === "savings"
-                ? "border-white/25 bg-white/10"
-                : "border-white/10 bg-white/3 hover:bg-white/5",
+                ? "bg-white/10 ring-white/40"
+                : "bg-white/5 ring-transparent hover:bg-white/8",
             )}
           >
             <PiggyBank className="mt-0.5 size-4 shrink-0 text-foreground" />
@@ -99,10 +99,10 @@ export function GoalCompleteDialog({
             type="button"
             onClick={() => setSource("gift")}
             className={cn(
-              "flex items-start gap-3 rounded-lg border p-3 text-left transition-colors",
+              "flex items-start gap-3 rounded-3xl p-4 text-left ring-1 transition-colors",
               source === "gift"
-                ? "border-white/25 bg-white/10"
-                : "border-white/10 bg-white/3 hover:bg-white/5",
+                ? "bg-white/10 ring-white/40"
+                : "bg-white/5 ring-transparent hover:bg-white/8",
             )}
           >
             <Gift className="mt-0.5 size-4 shrink-0 text-foreground" />

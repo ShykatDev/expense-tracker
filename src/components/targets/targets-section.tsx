@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useCategories } from "@/components/categories/categories-provider";
 import { TargetDialog } from "@/components/targets/target-dialog";
 import { useTargets } from "@/components/targets/targets-provider";
+import { RowIconButton, SheetButton, SheetSection } from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -125,27 +126,21 @@ export function TargetsSection() {
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-foreground">Monthly targets</p>
-          <p className="text-xs text-muted-foreground">
-            Cap what you spend each month on a category.
-          </p>
-        </div>
-        <Button
-          size="sm"
-          className="gap-1.5"
+    <SheetSection
+      title="Monthly targets"
+      subtitle="Cap what you spend each month on a category"
+      action={
+        <SheetButton
           onClick={() => {
             setEditing(null);
             setDialogOpen(true);
           }}
         >
-          <Plus className="size-4" />
+          <Plus />
           Set target
-        </Button>
-      </div>
-
+        </SheetButton>
+      }
+    >
       {!isLoaded ? (
         <Card className="gap-2 py-4">
           {[0, 1].map((index) => (
@@ -175,10 +170,10 @@ export function TargetsSection() {
               <div
                 key={row.target.categoryKey}
                 className={`flex items-center gap-3 px-4 py-3 ${
-                  index !== rows.length - 1 ? "border-b border-white/10" : ""
+                  index !== rows.length - 1 ? "border-b border-white/6" : ""
                 }`}
               >
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
                   {row.icon ? (
                     <row.icon className="size-4 text-foreground" />
                   ) : (
@@ -208,25 +203,21 @@ export function TargetsSection() {
                   {formatCurrency(cap)}
                 </Badge>
                 <div className="flex shrink-0 gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
+                  <RowIconButton
                     aria-label={`Edit ${row.label} target`}
                     onClick={() => {
                       setEditing(row.target);
                       setDialogOpen(true);
                     }}
                   >
-                    <Pencil className="size-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
+                    <Pencil />
+                  </RowIconButton>
+                  <RowIconButton
                     aria-label={`Remove ${row.label} target`}
                     onClick={() => setDeleting(row.target)}
                   >
-                    <Trash2 className="size-3.5" />
-                  </Button>
+                    <Trash2 />
+                  </RowIconButton>
                 </div>
               </div>
             );
@@ -282,6 +273,6 @@ export function TargetsSection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </section>
+    </SheetSection>
   );
 }

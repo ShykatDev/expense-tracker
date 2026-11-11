@@ -11,11 +11,12 @@ interface TransactionsContextValue {
     type: TransactionType;
     category: string;
     amount: number;
+    createdAt?: number;
   }[]) => Transaction[];
   removeTransaction: (id: string) => void;
   updateTransaction: (
     id: string,
-    patch: Partial<Pick<Transaction, "category" | "amount">>,
+    patch: Partial<Pick<Transaction, "category" | "amount" | "type" | "createdAt">>,
   ) => void;
   renameTransactionCategory: (
     type: TransactionType,

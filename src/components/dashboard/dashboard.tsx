@@ -1,31 +1,32 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { useCategories } from "@/components/categories/categories-provider";
 import { useTargets } from "@/components/targets/targets-provider";
 import {
-  computeCategoryTotals,
   computeTotals,
   isWithinDateRange,
   type DateRangeFilter,
   type Transaction,
 } from "@/lib/transactions";
+import { AppSheet, AppShell, SheetButton, SheetSection } from "@/components/layout/app-shell";
+import { getSavingsVerdict } from "@/lib/savings";
 import { monthKey } from "@/lib/targets";
 
-import { BalanceOverviewCard } from "./balance-overview-card";
 import { usePublishBalance } from "./balance-summary-store";
 import { ConfirmTransactionActionDialog } from "./confirm-transaction-action";
-import { DateFilters } from "./date-filters";
-import { EditTransactionDrawer } from "./edit-transaction-drawer";
+import { DashboardHero } from "./dashboard-hero";
 import { useMonthNav } from "./navbar";
-import { SavingsCard } from "./savings-card";
-import { StatCards } from "./stat-cards";
-import { TargetSummaryCard } from "./target-summary-card";
+import { SpendingAnalytics, SpentCategories } from "./spending-analytics";
+import { TargetsList } from "./targets-list";
 import { TransactionHistory } from "./transaction-history";
 import { useTransactions } from "./transactions-provider";
-import { ViewTabs, type DashboardView } from "./view-tabs";
+
+/** How many entries the dashboard previews before "See all". */
+const RECENT_COUNT = 5;
 
 function startOfMonth(monthOffset: number) {
   const now = new Date();
@@ -34,7 +35,7 @@ function startOfMonth(monthOffset: number) {
 
 export function Dashboard() {
   const { transactions } = useTransactions();
-  const { monthAnchor, monthLabel } = useMonthNav();
+  const { monthAnchor } = useMonthNav();
   const [filter, setFilter] = React.useState<DateRangeFilter>("month");
 
   const monthOffset = React.useMemo(() => {
@@ -132,11 +133,20 @@ export function Dashboard() {
     [previousTransactions],
   );
 
-  // Savings is a running total across every transaction, so it is always
-  // computed from the full ledger rather than the filtered view.
-  const lifetimeTotals = React.useMemo(
-    () => computeTotals(transactions),
-    [transactions],
+  // The verdict compares this month with the one before it, when there is
+  // anything logged for that month.
+  const previousMonthSavings = React.useMemo(() => {
+    const previous = transactions.filter((t) =>
+      isWithinDateRange(t.createdAt, "month", previousMonthAnchor),
+    );
+    return previous.length > 0 ? computeTotals(previous).balance : null;
+  }, [transactions, previousMonthAnchor]);
+
+  // Savings is a monthly figure, so it is always measured against the
+  // navbar's month rather than the date chip.
+  const monthTotals = React.useMemo(
+    () => computeTotals(monthTransactions),
+    [monthTransactions],
   );
 
   const balanceChangePercent = React.useMemo(() => {
@@ -159,71 +169,63 @@ export function Dashboard() {
 
   return (
     <DashboardContent
-      filter={filter}
-      onFilterChange={setFilter}
-      transactions={filteredTransactions}
-      totals={totals}
-      lifetimeTotals={lifetimeTotals}
+      allTransactions={transactions}
+      monthTotals={monthTotals}
+      monthTransactions={monthTransactions}
+      previousMonthSavings={previousMonthSavings}
       spentByCategoryLabel={spentByCategoryLabel}
-      monthLabel={monthLabel}
+      monthAnchor={monthAnchor}
       monthKey={monthKey(monthAnchor)}
     />
   );
 }
 
 function DashboardContent({
-  filter,
-  onFilterChange,
-  transactions: filteredTransactions,
-  totals,
-  lifetimeTotals,
+  allTransactions,
+  monthTotals,
+  monthTransactions,
+  previousMonthSavings,
   spentByCategoryLabel,
-  monthLabel,
+  monthAnchor,
   monthKey: currentMonthKey,
 }: {
-  filter: DateRangeFilter;
-  onFilterChange: (filter: DateRangeFilter) => void;
-  transactions: Transaction[];
-  totals: { income: number; expense: number; balance: number };
-  lifetimeTotals: { income: number; expense: number; balance: number };
+  allTransactions: Transaction[];
+  monthTotals: { income: number; expense: number; balance: number };
+  monthTransactions: Transaction[];
+  previousMonthSavings: number | null;
   spentByCategoryLabel: Record<string, number>;
-  monthLabel: string;
+  monthAnchor: Date;
   monthKey: string;
 }) {
-  const { transactions, removeTransaction, updateTransaction } =
-    useTransactions();
+  const router = useRouter();
+  const { removeTransaction } = useTransactions();
   const { categories } = useCategories();
   const { targets } = useTargets();
-  const [view, setView] = React.useState<DashboardView>("overview");
-  const [editingTransaction, setEditingTransaction] =
-    React.useState<Transaction | null>(null);
-  const [pendingUpdate, setPendingUpdate] = React.useState<{
-    transaction: Transaction;
-    category: string;
-    amount: number;
-  } | null>(null);
   const [deletingTransaction, setDeletingTransaction] =
     React.useState<Transaction | null>(null);
-
-  const categoryTotals = React.useMemo(
-    () => computeCategoryTotals(filteredTransactions),
-    [filteredTransactions],
-  );
 
   const allCustomCategories = React.useMemo(
     () => [...categories.income, ...categories.expense],
     [categories.income, categories.expense],
   );
 
-  function handleConfirmUpdate() {
-    if (!pendingUpdate) return;
-    updateTransaction(pendingUpdate.transaction.id, {
-      category: pendingUpdate.category,
-      amount: pendingUpdate.amount,
-    });
-    toast.success("Entry updated");
-    setPendingUpdate(null);
-  }
+  const recentTransactions = React.useMemo(
+    () =>
+      [...monthTransactions]
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, RECENT_COUNT),
+    [monthTransactions],
+  );
+
+  const verdict = React.useMemo(
+    () =>
+      getSavingsVerdict({
+        income: monthTotals.income,
+        expense: monthTotals.expense,
+        previousSavings: previousMonthSavings,
+      }),
+    [monthTotals.income, monthTotals.expense, previousMonthSavings],
+  );
 
   function handleConfirmDelete() {
     if (!deletingTransaction) return;
@@ -234,78 +236,55 @@ function DashboardContent({
 
   return (
     <>
-      <div className="flex flex-1 flex-col gap-8 pb-28">
-        <header className="flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Expense Tracker
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Track your income and spending at a glance.
-          </p>
-        </header>
+      <AppShell>
+        <DashboardHero
+          savings={monthTotals.balance}
+          income={monthTotals.income}
+          expense={monthTotals.expense}
+          verdict={verdict}
+        />
 
-        <div className="flex items-center justify-between gap-3">
-          <ViewTabs value={view} onChange={setView} />
-          <DateFilters value={filter} onChange={onFilterChange} />
-        </div>
-
-        {view === "overview" ? (
-          <section className="flex flex-col gap-4">
-            <StatCards income={totals.income} expense={totals.expense} />
-            <SavingsCard
-              savings={lifetimeTotals.balance}
-              income={lifetimeTotals.income}
-              expense={lifetimeTotals.expense}
-            />
-            <BalanceOverviewCard
-              balance={totals.balance}
-              income={totals.income}
-              expense={totals.expense}
-              data={categoryTotals}
-            />
-            <TargetSummaryCard
-              monthLabel={monthLabel}
-              monthKey={currentMonthKey}
-              spentByCategoryLabel={spentByCategoryLabel}
-              targets={targets}
-              customCategories={allCustomCategories}
-            />
-          </section>
-        ) : (
-          <TransactionHistory
-            transactions={filteredTransactions}
-            customCategories={allCustomCategories}
-            onEdit={setEditingTransaction}
-            onDelete={setDeletingTransaction}
+        <AppSheet>
+          <SpendingAnalytics
+            transactions={allTransactions}
+            monthAnchor={monthAnchor}
           />
-        )}
-      </div>
 
-      <EditTransactionDrawer
-        transaction={editingTransaction}
-        onOpenChange={(open) => {
-          if (!open) setEditingTransaction(null);
-        }}
-        onSave={(id, patch) => {
-          const transaction = transactions.find((t) => t.id === id);
-          if (!transaction) return;
-          setPendingUpdate({ transaction, ...patch });
-          setEditingTransaction(null);
-        }}
-      />
+          <SpentCategories
+            transactions={monthTransactions}
+            customCategories={allCustomCategories}
+          />
 
-      <ConfirmTransactionActionDialog
-        open={pendingUpdate !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingUpdate(null);
-        }}
-        action="update"
-        transaction={pendingUpdate?.transaction ?? null}
-        nextCategory={pendingUpdate?.category}
-        nextAmount={pendingUpdate?.amount}
-        customCategories={allCustomCategories}
-        onConfirm={handleConfirmUpdate}
-      />
+          <TargetsList
+            monthKey={currentMonthKey}
+            spentByCategoryLabel={spentByCategoryLabel}
+            targets={targets}
+            customCategories={allCustomCategories}
+          />
+
+          <SheetSection
+            title="Recent transactions"
+            subtitle={
+              monthTransactions.length > RECENT_COUNT
+                ? `Latest ${RECENT_COUNT} of ${monthTransactions.length} this month`
+                : undefined
+            }
+            action={
+              <SheetButton onClick={() => router.push("/history")}>See all</SheetButton>
+            }
+          >
+            <TransactionHistory
+              transactions={recentTransactions}
+              customCategories={allCustomCategories}
+              onEdit={(transaction) =>
+                router.push(`/transaction?edit=${transaction.id}`)
+              }
+              onDelete={setDeletingTransaction}
+              emptyMessage="No transactions this month yet."
+            />
+          </SheetSection>
+        </AppSheet>
+      </AppShell>
 
       <ConfirmTransactionActionDialog
         open={deletingTransaction !== null}

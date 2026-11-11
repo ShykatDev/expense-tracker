@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -9,6 +9,14 @@ import { useCategories } from "@/components/categories/categories-provider";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { TargetsSection } from "@/components/targets/targets-section";
 import { useTargets } from "@/components/targets/targets-provider";
+import {
+  AppHero,
+  AppSheet,
+  AppShell,
+  RowIconButton,
+  SheetSection,
+  SheetToggle,
+} from "@/components/layout/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,8 +35,8 @@ import type { CustomCategory, TransactionType } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
-  { value: "income", label: "Income" },
-  { value: "expense", label: "Expense" },
+  { value: "expense", label: "expenses" },
+  { value: "income", label: "income" },
 ];
 
 export function CategoriesView() {
@@ -55,6 +63,9 @@ export function CategoriesView() {
   );
 
   const customCategories = categories[type];
+  const visibleCount = resolved.filter(
+    (category) => !hidden[type].includes(category.key),
+  ).length;
 
   const existingLabels = React.useMemo(
     () => resolved.map((category) => category.label),
@@ -98,55 +109,44 @@ export function CategoriesView() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 pb-28 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
-        <p className="text-sm text-muted-foreground">
-          Add your own categories and choose which ones show up in the drawers.
-        </p>
-      </header>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="glass flex w-fit items-center gap-1 rounded-full border border-white/10 p-1">
-          {TYPE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setType(option.value)}
-              className={cn(
-                "h-8 rounded-full px-4 text-xs font-medium transition-all",
-                type === option.value
-                  ? "bg-white/15 text-foreground shadow-[0_1px_0_0_rgba(255,255,255,0.1)_inset]"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        <Button
-          size="sm"
-          className="gap-1.5"
-          onClick={() => {
+    <AppShell>
+      <AppHero
+        label={type === "expense" ? "Expense Categories" : "Income Sources"}
+        value={visibleCount}
+        action={{
+          label: "Add category",
+          onClick: () => {
             setEditing(null);
             setDialogOpen(true);
-          }}
-        >
-          <Plus className="size-4" />
-          Add category
-        </Button>
-      </div>
+          },
+        }}
+      >
+        <p className="text-xs text-white/55">
+          shown in the entry screen · {resolved.length - visibleCount} hidden
+        </p>
+        <div className="mt-5">
+          <SheetToggle
+            label="Category type"
+            value={type}
+            options={TYPE_OPTIONS}
+            onChange={setType}
+          />
+        </div>
+      </AppHero>
 
+      <AppSheet>
       {type === "expense" ? (
         <TargetsSection />
       ) : (
-        <p className="text-xs text-muted-foreground">
-          Targets apply to expense categories. Switch to the Expense tab to set
-          one.
+        <p className="rounded-2xl bg-white/6 px-5 py-4 text-center text-xs text-white/45">
+          Targets apply to expense categories. Switch to expenses to set one.
         </p>
       )}
 
+      <SheetSection
+        title={type === "expense" ? "All categories" : "All sources"}
+        subtitle="Toggle off the ones you don't use"
+      >
       {!isLoaded ? (
         <Card className="gap-2 py-4">
           {[0, 1, 2, 3].map((index) => (
@@ -166,10 +166,10 @@ export function CategoriesView() {
                 key={category.key}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3",
-                  index !== resolved.length - 1 && "border-b border-white/10",
+                  index !== resolved.length - 1 && "border-b border-white/6",
                 )}
               >
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/10">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
                   <category.icon className="size-4 text-foreground" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -190,9 +190,7 @@ export function CategoriesView() {
                 />
                 {isCustom && (
                   <div className="flex shrink-0 gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
+                    <RowIconButton
                       aria-label={`Edit ${category.label}`}
                       onClick={() => {
                         setEditing(
@@ -202,11 +200,9 @@ export function CategoriesView() {
                         setDialogOpen(true);
                       }}
                     >
-                      <Pencil className="size-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
+                      <Pencil />
+                    </RowIconButton>
+                    <RowIconButton
                       aria-label={`Delete ${category.label}`}
                       onClick={() =>
                         setDeleting(
@@ -215,8 +211,8 @@ export function CategoriesView() {
                         )
                       }
                     >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                      <Trash2 />
+                    </RowIconButton>
                   </div>
                 )}
               </div>
@@ -224,6 +220,8 @@ export function CategoriesView() {
           })}
         </Card>
       )}
+      </SheetSection>
+      </AppSheet>
 
       <CategoryDialog
         key={editing?.id ?? "create"}
@@ -264,6 +262,6 @@ export function CategoriesView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppShell>
   );
 }

@@ -1,42 +1,11 @@
 import { ImageResponse } from "next/og"
 
+import { AppIconMark } from "@/lib/app-icon"
+
 export const size = { width: 180, height: 180 }
 export const contentType = "image/png"
 
+// iOS rounds the corners itself, so the mark is drawn full-bleed.
 export default function AppleIcon() {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          background: "#0a0a0a",
-        }}
-      >
-        <div
-          style={{
-            margin: "auto",
-            width: "58%",
-            height: "58%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "20%",
-            border: "7px solid white",
-          }}
-        >
-          <div
-            style={{
-              width: "34%",
-              height: "34%",
-              borderRadius: "9999px",
-              background: "white",
-            }}
-          />
-        </div>
-      </div>
-    ),
-    { ...size },
-  )
+  return new ImageResponse(<AppIconMark fullBleed />, { ...size })
 }

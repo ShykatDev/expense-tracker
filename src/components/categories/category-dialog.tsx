@@ -93,10 +93,10 @@ export function CategoryDialog({
                   type="button"
                   onClick={() => setCategoryType(option)}
                   className={cn(
-                    "h-9 rounded-lg border px-3 text-sm font-medium transition-colors",
+                    "h-11 rounded-full px-3 text-sm transition-colors",
                     categoryType === option
-                      ? "border-white/25 bg-white/15 text-foreground"
-                      : "border-white/10 bg-white/3 text-muted-foreground hover:bg-white/5 hover:text-foreground",
+                      ? "bg-white text-black"
+                      : "bg-white/6 text-white/60 hover:bg-white/10 hover:text-white",
                   )}
                 >
                   {option === "income" ? "Income" : "Expense"}

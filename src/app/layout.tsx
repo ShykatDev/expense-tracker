@@ -27,7 +27,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  // Matches the top of the hero so the status bar blends into it.
+  themeColor: "#0d2a6b",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
