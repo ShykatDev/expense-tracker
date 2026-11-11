@@ -117,7 +117,7 @@ function Figure({
         </span>
         {label}
       </span>
-      <span className="font-display text-lg font-semibold tabular-nums text-white">
+      <span className="font-display text-lg font-semibold tabular-nums text-white/75">
         <AnimatedNumber value={value} format={formatCurrency} />
       </span>
     </button>

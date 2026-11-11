@@ -4,8 +4,8 @@ import { AppScroller } from "@/components/layout/app-scroller";
 import { BottomNav } from "@/components/layout/bottom-nav";
 
 /**
- * The app frame: exactly the screen's height (see `StandaloneViewport`), and
- * fixed, so the document never scrolls. Pages scroll inside `AppScroller`, which keeps the fixed bottom
+ * The app frame: exactly the viewport's height, so the document never
+ * scrolls. Pages scroll inside `AppScroller`, which keeps the fixed bottom
  * navigation steady on mobile (no toolbar collapse, no page bounce).
  *
  * Inside, a phone-width column holds each page's own hero and sheet (see
@@ -13,7 +13,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
  */
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
-    <div className="fixed inset-x-0 top-0 h-[calc(100dvh+var(--viewport-gap,0px))] w-full overflow-hidden">
+    <div className="h-dvh w-full overflow-hidden">
       <BalanceSummaryProvider>
         <MonthNavProvider>
           <AppScroller>

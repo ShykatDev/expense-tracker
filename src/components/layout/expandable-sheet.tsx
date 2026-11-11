@@ -214,7 +214,7 @@ export function ExpandableSheet({
   return (
     <div
       ref={rootRef}
-      className="reveal-target relative h-[calc(100dvh+var(--viewport-gap,0px))] overflow-hidden overscroll-none bg-black md:h-[calc(100dvh-3rem)] md:rounded-[2rem] md:border md:border-white/10"
+      className="reveal-target relative h-dvh overflow-hidden overscroll-none bg-black md:h-[calc(100dvh-3rem)] md:rounded-[2rem] md:border md:border-white/10"
       style={{ "--sheet-p": 0 } as React.CSSProperties}
     >
       {/* The hero. Its background and header row stay; its body fades,

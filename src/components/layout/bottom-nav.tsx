@@ -46,7 +46,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main"
-      className="reveal-nav pointer-events-none fixed inset-x-0 bottom-[calc(max(1rem,env(safe-area-inset-bottom))-var(--viewport-gap,0px))] z-40 flex justify-center px-4"
+      className="reveal-nav pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4"
     >
       <ul
         className="pointer-events-auto relative flex items-center rounded-full bg-[#1a1b20]/40 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-white/12 backdrop-blur-xl backdrop-saturate-[1.8]"

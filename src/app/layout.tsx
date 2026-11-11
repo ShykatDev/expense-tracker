@@ -1,5 +1,4 @@
 import { SplashScreen } from "@/components/brand/splash-screen";
-import { StandaloneViewport } from "@/components/layout/standalone-viewport";
 import { CategoriesProvider } from "@/components/categories/categories-provider";
 import { TransactionsProvider } from "@/components/dashboard/transactions-provider";
 import { GoalsProvider } from "@/components/goals/goals-provider";
@@ -84,7 +83,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </TransactionsProvider>
         </CategoriesProvider>
         <AppToaster />
-        <StandaloneViewport />
       </body>
     </html>
   );
