@@ -6,12 +6,16 @@ const THEME_COLOR = "#0d2a6b"
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "Expense Tracker",
-    short_name: "Expenses",
+    name: "Pulse",
+    short_name: "Pulse",
     description: "Track your income and spending at a glance.",
     start_url: "/",
     scope: "/",
-    display: "standalone",
+    // Full screen where the platform allows it (Android hides the system
+    // bars); otherwise standalone. iOS ignores this and uses the
+    // black-translucent status bar plus viewport-fit=cover instead.
+    display: "fullscreen",
+    display_override: ["fullscreen", "standalone"],
     orientation: "portrait",
     // The splash screen: the darkest navy of the icon, so launch feels seamless.
     background_color: "#040915",

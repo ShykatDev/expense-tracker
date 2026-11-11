@@ -2,7 +2,7 @@
 
 import { Check, Pencil, Target, Trash2 } from "lucide-react";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 
 import { useMonthNav } from "@/components/dashboard/navbar";
 import { useTransactions } from "@/components/dashboard/transactions-provider";

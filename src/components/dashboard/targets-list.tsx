@@ -87,56 +87,99 @@ export function TargetsList({
         {rows.map((row) => {
           const Icon = row.icon ?? getCategoryIconByKey(null);
           const remaining = row.cap - row.spent;
-          const percent = Math.round(row.progress * 100);
+          // The real share, uncapped, so "130%" reads honestly when over.
+          const percent = row.cap > 0 ? Math.round((row.spent / row.cap) * 100) : 0;
+          const isOver = row.status === "over";
+          const isReached = row.status === "reached";
+          // A heads-up before the cap is hit.
+          const isNear = !isOver && !isReached && percent >= 85;
 
           return (
-            <div key={row.key} className="flex flex-col gap-3 rounded-3xl bg-white/6 p-4">
+            <div
+              key={row.key}
+              className={cn(
+                "flex flex-col gap-3 rounded-3xl p-4 ring-1 transition-colors duration-500",
+                isOver
+                  ? "bg-rose-500/[0.09] ring-rose-400/25"
+                  : isNear
+                    ? "bg-amber-400/[0.06] ring-amber-300/15"
+                    : "bg-white/6 ring-transparent",
+              )}
+            >
               <div className="flex items-center gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
-                  <Icon className="size-4 text-white" />
+                <span
+                  className={cn(
+                    "flex size-10 shrink-0 items-center justify-center rounded-full",
+                    isOver
+                      ? "bg-rose-500/15 text-rose-300"
+                      : isNear
+                        ? "bg-amber-400/12 text-amber-200"
+                        : "bg-white/8 text-white",
+                  )}
+                >
+                  <Icon className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-white/85">{row.label}</p>
-                  <p className="text-xs tabular-nums text-white/40">
+                  <p className={cn("truncate text-sm", isOver ? "text-rose-50" : "text-white/85")}>
+                    {row.label}
+                  </p>
+                  <p className={cn("text-xs tabular-nums", isOver ? "text-rose-200/60" : "text-white/40")}>
                     {formatCurrency(row.spent)} of {formatCurrency(row.cap)}
                   </p>
                 </div>
 
-                {row.status === "reached" ? (
+                {isReached ? (
                   <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-400/12 px-2.5 py-1 text-xs font-medium text-emerald-300">
                     <Check className="size-3.5" />
                     Reached
                   </span>
-                ) : row.status === "over" ? (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-rose-400/12 px-2.5 py-1 text-xs font-medium text-rose-300">
-                    <TriangleAlert className="size-3.5" />
-                    {formatCurrency(Math.abs(remaining))} over
+                ) : isOver ? (
+                  <span className="shrink-0 text-right">
+                    <span className="flex items-center justify-end gap-1 text-sm font-semibold tabular-nums text-rose-300">
+                      <TriangleAlert className="size-3.5" />
+                      {formatCurrency(Math.abs(remaining))}
+                    </span>
+                    <span className="block text-[11px] text-rose-200/60">over budget</span>
                   </span>
                 ) : (
                   <span className="shrink-0 text-right">
-                    <span className="block text-sm font-medium tabular-nums text-white">
+                    <span
+                      className={cn(
+                        "block text-sm font-medium tabular-nums",
+                        isNear ? "text-amber-200" : "text-white",
+                      )}
+                    >
                       {formatCurrency(remaining)}
                     </span>
-                    <span className="block text-[11px] text-white/40">left</span>
+                    <span className={cn("block text-[11px]", isNear ? "text-amber-200/60" : "text-white/40")}>
+                      {isNear ? "almost there" : "left"}
+                    </span>
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/8">
+                <div className={cn("h-2 flex-1 overflow-hidden rounded-full", isOver ? "bg-rose-500/15" : "bg-white/8")}>
                   <div
                     className={cn(
-                      "h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      row.status === "over"
-                        ? "bg-rose-400/60"
-                        : row.status === "reached"
+                      "h-full rounded-full transition-[width,background-color] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      isOver
+                        ? "bg-linear-to-r from-rose-500/70 to-rose-400"
+                        : isReached
                           ? "bg-emerald-400/60"
-                          : "accent-gradient-x",
+                          : isNear
+                            ? "bg-linear-to-r from-amber-500/60 to-amber-300/90"
+                            : "accent-gradient-x",
                     )}
                     style={{ width: `${Math.min(Math.max(percent, percent > 0 ? 3 : 0), 100)}%` }}
                   />
                 </div>
-                <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-white/40">
+                <span
+                  className={cn(
+                    "w-10 shrink-0 text-right text-[11px] tabular-nums",
+                    isOver ? "font-medium text-rose-300" : isNear ? "text-amber-200/80" : "text-white/40",
+                  )}
+                >
                   {percent}%
                 </span>
               </div>

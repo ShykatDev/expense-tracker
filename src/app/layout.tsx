@@ -1,8 +1,9 @@
+import { SplashScreen } from "@/components/brand/splash-screen";
 import { CategoriesProvider } from "@/components/categories/categories-provider";
 import { TransactionsProvider } from "@/components/dashboard/transactions-provider";
 import { GoalsProvider } from "@/components/goals/goals-provider";
 import { TargetsProvider } from "@/components/targets/targets-provider";
-import { Toaster } from "@/components/ui/sonner";
+import { AppToaster } from "@/components/brand/app-toaster";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
@@ -18,10 +19,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Expense Tracker",
-  description: "Expense Tracker",
+  title: "Pulse",
+  description: "Track your income and spending at a glance.",
   appleWebApp: {
-    title: "Expense Tracker",
+    title: "Pulse",
     statusBarStyle: "black-translucent",
   },
 };
@@ -32,13 +33,19 @@ export const viewport: Viewport = {
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
+  // Draw edge to edge, under the status bar and home indicator. Every screen
+  // pads itself with env(safe-area-inset-*) so nothing ends up beneath them.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`dark ${fontSans.variable} ${geistMono.variable} h-full antialiased`}
+      // `app-loading` keeps the page blurred behind the splash screen until it
+      // reveals it (see .reveal-target in globals.css).
+      className={`dark app-loading ${fontSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
       style={{ colorScheme: "dark" }}
     >
       <body className="min-h-full flex flex-col">
@@ -52,12 +59,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </div>
         <CategoriesProvider>
           <TransactionsProvider>
+            <SplashScreen />
             <TargetsProvider>
               <GoalsProvider>{children}</GoalsProvider>
             </TargetsProvider>
           </TransactionsProvider>
         </CategoriesProvider>
-        <Toaster theme="dark" position="top-center" offset={{ top: 80 }} />
+        <AppToaster />
       </body>
     </html>
   );

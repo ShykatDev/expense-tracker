@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { AppHero } from "@/components/layout/app-shell";
+import { TRANSITION } from "@/components/layout/page-transition";
 import type { SavingsTone, SavingsVerdict } from "@/lib/savings";
 import { formatCurrency } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,7 @@ export function DashboardHero({
       label="Total Savings"
       value={formatCurrency(savings)}
       showMonthPicker
-      action={{ label: "Add transaction", onClick: () => router.push("/transaction") }}
+      action={{ label: "Add transaction", onClick: () => router.push("/transaction", { transitionTypes: [...TRANSITION.sheetUp] }) }}
     >
       {/* Verdict */}
       <div className="mt-4 flex max-w-sm items-start gap-2.5 rounded-2xl bg-white/8 px-3.5 py-2.5 text-left ring-1 ring-white/10">
@@ -76,7 +77,7 @@ export function HeroFigures({ income, expense }: { income: number; expense: numb
         value={income}
         icon={ArrowUpRight}
         iconClass="bg-emerald-400/15 text-emerald-300"
-        onClick={() => router.push("/transaction?type=income")}
+        onClick={() => router.push("/transaction?type=income", { transitionTypes: [...TRANSITION.sheetUp] })}
       />
       <span aria-hidden="true" className="h-10 w-px shrink-0 bg-white/12" />
       <Figure
@@ -84,7 +85,7 @@ export function HeroFigures({ income, expense }: { income: number; expense: numb
         value={expense}
         icon={ArrowDownRight}
         iconClass="bg-rose-400/15 text-rose-300"
-        onClick={() => router.push("/transaction?type=expense")}
+        onClick={() => router.push("/transaction?type=expense", { transitionTypes: [...TRANSITION.sheetUp] })}
       />
     </div>
   );

@@ -1,10 +1,10 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { usePathname } from "next/navigation";
 import * as React from "react";
 
-import { AppSidebar, MonthPicker } from "@/components/dashboard/navbar";
+import { AppMark } from "@/components/brand/app-logo";
+import { MonthPicker } from "@/components/dashboard/navbar";
 import { cn } from "@/lib/utils";
 
 /**
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col animate-in fade-in duration-500 md:overflow-hidden md:rounded-[2rem] md:border md:border-white/10">
+    <div className="reveal-target flex flex-1 flex-col animate-in fade-in duration-500 md:overflow-hidden md:rounded-[2rem] md:border md:border-white/10">
       {children}
     </div>
   );
@@ -27,7 +27,7 @@ const HERO_BACKGROUND =
   "radial-gradient(75% 55% at 88% 30%, rgba(59,130,246,0.24) 0%, rgba(59,130,246,0) 70%), radial-gradient(60% 45% at 0% 0%, rgba(96,165,250,0.10) 0%, rgba(96,165,250,0) 70%), linear-gradient(180deg, #0a1f52 0%, #08183d 34%, #050e24 66%, #020409 100%)";
 
 /**
- * The hero: the menu on the left, an optional month picker and the
+ * The hero: the minimal Pulse mark on the left, an optional month picker and the
  * page's primary action on the right, and the headline figure centred.
  */
 export function AppHero({
@@ -47,8 +47,6 @@ export function AppHero({
   /** Supporting content under the figure. */
   children?: React.ReactNode;
 }) {
-  const pathname = usePathname();
-
   return (
     <section
       className="relative isolate overflow-hidden px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-20 sm:px-8"
@@ -59,11 +57,10 @@ export function AppHero({
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"
       />
 
-      <header className="relative flex items-center justify-between gap-3">
-        <AppSidebar
-          pathname={pathname}
-          triggerClassName="size-9 text-white hover:bg-white/10 hover:text-white"
-        />
+      <header data-hero-header className="relative z-10 flex items-center justify-between gap-3">
+        <div className="flex size-10 items-center justify-center" role="img" aria-label="Pulse">
+          <AppMark className="size-6 text-white" />
+        </div>
 
         <div className="flex items-center gap-2">
           {showMonthPicker && (
@@ -82,7 +79,7 @@ export function AppHero({
         </div>
       </header>
 
-      <div className="relative flex flex-col items-center pt-12 text-center">
+      <div data-hero-content className="relative flex flex-col items-center pt-12 text-center">
         <p className="text-sm font-semibold text-white/90">{label}</p>
         <div className="mt-1 text-[3.25rem] leading-tight font-bold tracking-tight tabular-nums text-white">
           {value}
@@ -104,7 +101,7 @@ export function AppSheet({
   return (
     <div
       className={cn(
-        "relative -mt-10 flex flex-1 flex-col gap-10 rounded-t-[2rem] bg-[linear-gradient(180deg,#121316_0%,#060607_20rem,#000_100%)] px-5 pt-3 pb-16 shadow-[0_-1px_0_0_rgba(255,255,255,0.06)] sm:px-8",
+        "relative -mt-10 flex flex-1 flex-col gap-10 rounded-t-[2rem] bg-[linear-gradient(180deg,#121316_0%,#060607_20rem,#000_100%)] px-5 pt-3 pb-[calc(7rem+env(safe-area-inset-bottom))] shadow-[0_-1px_0_0_rgba(255,255,255,0.06)] sm:px-8",
         className,
       )}
     >

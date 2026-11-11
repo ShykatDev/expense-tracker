@@ -1,3 +1,4 @@
+import { PageTransition } from "@/components/layout/page-transition";
 import { TransactionEntry } from "@/components/transaction/transaction-entry";
 import type { Metadata, Viewport } from "next";
 
@@ -12,9 +13,13 @@ export const viewport: Viewport = {
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Add transaction · Expense Tracker",
+  title: "Add transaction · Pulse",
 };
 
 export default function TransactionPage() {
-  return <TransactionEntry />;
+  return (
+    <PageTransition>
+      <TransactionEntry />
+    </PageTransition>
+  );
 }

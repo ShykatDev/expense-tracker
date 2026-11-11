@@ -1,29 +1,8 @@
 "use client";
 
 import * as React from "react";
-import {
-  CalendarDays,
-  Check,
-  History,
-  LayoutDashboard,
-  Menu,
-  Settings,
-  Tags,
-  Target,
-} from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -80,73 +59,40 @@ export function MonthNavProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/categories", label: "Categories", icon: Tags },
-  { href: "/history", label: "History", icon: History },
-  { href: "/goals", label: "Goals", icon: Target },
-  { href: "/settings", label: "Settings", icon: Settings },
-] as const;
-
 /**
- * The navbar is the only persistent chrome across routes, so it doubles as the
- * app's navigation: a menu button opens a sidebar with the route list, and the
- * month picker sits on the right.
- */
-export function Navbar() {
-  const monthNav = React.useContext(MonthNavContext);
-  const pathname = usePathname();
-
-  // The dashboard carries its own header inside the blue hero.
-  if (pathname === "/") return null;
-
-  return (
-    <div className="solid-panel sticky top-4 z-20 mb-10 flex items-center gap-3 rounded-2xl border border-white/10 px-3 py-2 shadow-[0_1px_0_0_rgba(255,255,255,0.08)_inset,0_8px_30px_-12px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-top-2 duration-500">
-      <AppSidebar pathname={pathname} />
-
-      <div className="min-w-0 flex-1" />
-
-      {monthNav && <MonthPicker />}
-    </div>
-  );
-}
-
-/**
- * The month is shown as a pill that opens a list of months to jump to, so the
- * user can reach a distant month in one click instead of stepping through
- * arrows.
+ * The month is shown as a pill that opens a compact calendar: a year switcher
+ * over a 3×4 grid of months. Any past month is one tap away, future months
+ * are disabled, and "This month" jumps straight back.
  */
 export function MonthPicker({ className }: { className?: string }) {
   const monthNav = React.useContext(MonthNavContext);
   const [open, setOpen] = React.useState(false);
 
-  const months = React.useMemo(() => {
-    const now = new Date();
-    return Array.from({ length: 13 }, (_, index) => index - 12).map((offset) => {
-      const date = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-      return {
-        offset,
-        label: date.toLocaleDateString("en-US", {
-          month: "long",
-          year: "numeric",
-        }),
-      };
-    });
-  }, []);
+  const now = React.useMemo(() => new Date(), []);
+  const selectedYear = monthNav?.monthAnchor.getFullYear() ?? now.getFullYear();
+  const selectedMonth = monthNav?.monthAnchor.getMonth() ?? now.getMonth();
 
-  const currentOffset = React.useMemo(() => {
-    const now = new Date();
-    if (!monthNav) return 0;
-    return (
-      (monthNav.monthAnchor.getFullYear() - now.getFullYear()) * 12 +
-      (monthNav.monthAnchor.getMonth() - now.getMonth())
-    );
-  }, [monthNav]);
+  // The year being browsed; it resets to the selected year each time the
+  // calendar opens.
+  const [viewYear, setViewYear] = React.useState(selectedYear);
 
   if (!monthNav) return null;
 
+  function pick(month: number) {
+    const offset =
+      (viewYear - now.getFullYear()) * 12 + (month - now.getMonth());
+    monthNav!.goToMonth(offset);
+    setOpen(false);
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setViewYear(selectedYear);
+        setOpen(next);
+      }}
+    >
       <PopoverTrigger
         className={cn(
           "flex h-8 min-w-28 items-center justify-center gap-1.5 rounded-full bg-white/10 px-3 text-sm font-medium tabular-nums transition-colors hover:bg-white/15",
@@ -158,102 +104,79 @@ export function MonthPicker({ className }: { className?: string }) {
         <span className="truncate">{monthNav.monthLabel}</span>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-48">
-        <div className="flex flex-col gap-0.5">
-          {months.map((month) => (
-            <button
-              key={month.offset}
-              type="button"
-              onClick={() => {
-                monthNav.goToMonth(month.offset);
-                setOpen(false);
-              }}
-              className={cn(
-                "flex h-9 items-center justify-between rounded-2xl px-3 text-left text-xs font-medium transition-colors",
-                month.offset === currentOffset
-                  ? "bg-white/15 text-foreground"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
-              )}
-            >
-              {month.label}
-              {month.offset === currentOffset && (
-                <Check className="size-3.5" />
-              )}
-            </button>
-          ))}
+      <PopoverContent align="end" className="w-72 p-4">
+        {/* Year switcher */}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setViewYear((year) => year - 1)}
+            aria-label="Previous year"
+            className="flex size-9 items-center justify-center rounded-full bg-white/6 text-white/70 transition-colors hover:bg-white/12 hover:text-white"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <span className="text-base font-semibold tabular-nums text-white">
+            {viewYear}
+          </span>
+          <button
+            type="button"
+            onClick={() => setViewYear((year) => year + 1)}
+            disabled={viewYear >= now.getFullYear()}
+            aria-label="Next year"
+            className="flex size-9 items-center justify-center rounded-full bg-white/6 text-white/70 transition-colors hover:bg-white/12 hover:text-white disabled:pointer-events-none disabled:opacity-25"
+          >
+            <ChevronRight className="size-4" />
+          </button>
         </div>
+
+        {/* Months */}
+        <div className="mt-4 grid grid-cols-3 gap-1.5">
+          {MONTH_NAMES.map((name, month) => {
+            const isSelected = viewYear === selectedYear && month === selectedMonth;
+            const isCurrent = viewYear === now.getFullYear() && month === now.getMonth();
+            const isFuture =
+              viewYear > now.getFullYear() ||
+              (viewYear === now.getFullYear() && month > now.getMonth());
+
+            return (
+              <button
+                key={name}
+                type="button"
+                onClick={() => pick(month)}
+                disabled={isFuture}
+                aria-pressed={isSelected}
+                aria-label={`${name} ${viewYear}`}
+                className={cn(
+                  "relative flex h-11 items-center justify-center rounded-2xl text-sm transition-colors disabled:pointer-events-none disabled:text-white/20",
+                  isSelected
+                    ? "bg-white font-semibold text-black"
+                    : "text-white/75 hover:bg-white/8 hover:text-white",
+                )}
+              >
+                {name.slice(0, 3)}
+                {isCurrent && !isSelected && (
+                  <span className="absolute bottom-1.5 size-1 rounded-full bg-white/60" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            monthNav.goToMonth(0);
+            setOpen(false);
+          }}
+          className="mt-3 h-10 w-full rounded-full bg-white/6 text-xs text-white/70 transition-colors hover:bg-white/12 hover:text-white"
+        >
+          This month
+        </button>
       </PopoverContent>
     </Popover>
   );
 }
 
-export function AppSidebar({
-  pathname,
-  triggerClassName,
-}: {
-  pathname: string | null;
-  triggerClassName?: string;
-}) {
-  const [open, setOpen] = React.useState(false);
-
-  return (
-    <Drawer
-      open={open}
-      onOpenChange={setOpen}
-      swipeDirection="left"
-      showSwipeHandle={false}
-    >
-      <DrawerTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("size-8 shrink-0 rounded-full", triggerClassName)}
-            aria-label="Open navigation menu"
-          />
-        }
-      >
-        <Menu className="size-4" />
-      </DrawerTrigger>
-
-      <DrawerContent className="w-72 max-w-[85vw]">
-        <DrawerHeader>
-          <DrawerTitle>Expense Tracker</DrawerTitle>
-          <DrawerDescription>
-            Track your income and spending at a glance.
-          </DrawerDescription>
-        </DrawerHeader>
-
-        <nav className="flex flex-col gap-1 px-4 py-2">
-          {NAV_ITEMS.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname?.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <DrawerClose
-                key={item.href}
-                nativeButton={false}
-                render={
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-white/15 text-foreground shadow-[0_1px_0_0_rgba(255,255,255,0.1)_inset]"
-                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
-                    )}
-                  />
-                }
-              >
-                <Icon className="size-4 shrink-0" />
-                {item.label}
-              </DrawerClose>
-            );
-          })}
-        </nav>
-      </DrawerContent>
-    </Drawer>
-  );
-}
+const MONTH_NAMES = Array.from({ length: 12 }, (_, month) =>
+  new Date(2000, month, 1).toLocaleDateString("en-US", { month: "long" }),
+);

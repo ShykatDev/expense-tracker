@@ -2,7 +2,7 @@
 
 import { Pencil, Plus, Target, Trash2 } from "lucide-react";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 
 import { useCategories } from "@/components/categories/categories-provider";
 import { TargetDialog } from "@/components/targets/target-dialog";

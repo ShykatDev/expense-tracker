@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 
 import { useCategories } from "@/components/categories/categories-provider";
 import { useTargets } from "@/components/targets/targets-provider";
@@ -12,13 +12,15 @@ import {
   type DateRangeFilter,
   type Transaction,
 } from "@/lib/transactions";
-import { AppSheet, AppShell, SheetButton, SheetSection } from "@/components/layout/app-shell";
+import { SheetButton, SheetSection } from "@/components/layout/app-shell";
+import { TRANSITION } from "@/components/layout/page-transition";
 import { getSavingsVerdict } from "@/lib/savings";
 import { monthKey } from "@/lib/targets";
 
 import { usePublishBalance } from "./balance-summary-store";
 import { ConfirmTransactionActionDialog } from "./confirm-transaction-action";
 import { DashboardHero } from "./dashboard-hero";
+import { ExpandableSheet } from "./expandable-sheet";
 import { useMonthNav } from "./navbar";
 import { SpendingAnalytics, SpentCategories } from "./spending-analytics";
 import { TargetsList } from "./targets-list";
@@ -236,55 +238,62 @@ function DashboardContent({
 
   return (
     <>
-      <AppShell>
-        <DashboardHero
-          savings={monthTotals.balance}
-          income={monthTotals.income}
-          expense={monthTotals.expense}
-          verdict={verdict}
-        />
-
-        <AppSheet>
+      <ExpandableSheet
+        hero={
+          <DashboardHero
+            savings={monthTotals.balance}
+            income={monthTotals.income}
+            expense={monthTotals.expense}
+            verdict={verdict}
+          />
+        }
+        peek={(expanded) => (
           <SpendingAnalytics
             transactions={allTransactions}
             monthAnchor={monthAnchor}
+            detailed={expanded}
           />
-
-          <SpentCategories
-            transactions={monthTransactions}
-            customCategories={allCustomCategories}
-          />
-
-          <TargetsList
-            monthKey={currentMonthKey}
-            spentByCategoryLabel={spentByCategoryLabel}
-            targets={targets}
-            customCategories={allCustomCategories}
-          />
-
-          <SheetSection
-            title="Recent transactions"
-            subtitle={
-              monthTransactions.length > RECENT_COUNT
-                ? `Latest ${RECENT_COUNT} of ${monthTransactions.length} this month`
-                : undefined
-            }
-            action={
-              <SheetButton onClick={() => router.push("/history")}>See all</SheetButton>
-            }
-          >
-            <TransactionHistory
-              transactions={recentTransactions}
+        )}
+        details={
+          <>
+            <SpentCategories
+              transactions={monthTransactions}
               customCategories={allCustomCategories}
-              onEdit={(transaction) =>
-                router.push(`/transaction?edit=${transaction.id}`)
-              }
-              onDelete={setDeletingTransaction}
-              emptyMessage="No transactions this month yet."
             />
-          </SheetSection>
-        </AppSheet>
-      </AppShell>
+
+            <TargetsList
+              monthKey={currentMonthKey}
+              spentByCategoryLabel={spentByCategoryLabel}
+              targets={targets}
+              customCategories={allCustomCategories}
+            />
+
+            <SheetSection
+              title="Recent transactions"
+              subtitle={
+                monthTransactions.length > RECENT_COUNT
+                  ? `Latest ${RECENT_COUNT} of ${monthTransactions.length} this month`
+                  : undefined
+              }
+              action={
+                <SheetButton onClick={() => router.push("/history")}>See all</SheetButton>
+              }
+            >
+              <TransactionHistory
+                transactions={recentTransactions}
+                customCategories={allCustomCategories}
+                onEdit={(transaction) =>
+                  router.push(`/transaction?edit=${transaction.id}`, {
+                    transitionTypes: [...TRANSITION.sheetUp],
+                  })
+                }
+                onDelete={setDeletingTransaction}
+                emptyMessage="No transactions this month yet."
+              />
+            </SheetSection>
+          </>
+        }
+      />
 
       <ConfirmTransactionActionDialog
         open={deletingTransaction !== null}

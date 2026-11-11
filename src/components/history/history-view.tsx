@@ -3,7 +3,7 @@
 import { Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 
 import { useCategories } from "@/components/categories/categories-provider";
 import { ConfirmTransactionActionDialog } from "@/components/dashboard/confirm-transaction-action";
@@ -19,6 +19,7 @@ import {
   SheetButton,
   SheetToggle,
 } from "@/components/layout/app-shell";
+import { TRANSITION } from "@/components/layout/page-transition";
 import {
   computeTotals,
   formatCurrency,
@@ -90,7 +91,7 @@ export function HistoryView() {
       <AppHero
         label={isFiltered ? "Net for this view" : "All-time balance"}
         value={formatCurrency(totals.balance)}
-        action={{ label: "Add transaction", onClick: () => router.push("/transaction") }}
+        action={{ label: "Add transaction", onClick: () => router.push("/transaction", { transitionTypes: [...TRANSITION.sheetUp] }) }}
       >
         <p className="text-xs tabular-nums text-white/55">
           {filtered.length} {filtered.length === 1 ? "transaction" : "transactions"}
@@ -153,7 +154,7 @@ export function HistoryView() {
         <TransactionHistory
           transactions={shown}
           customCategories={customCategories}
-          onEdit={(transaction) => router.push(`/transaction?edit=${transaction.id}`)}
+          onEdit={(transaction) => router.push(`/transaction?edit=${transaction.id}`, { transitionTypes: [...TRANSITION.sheetUp] })}
           onDelete={setDeleting}
           emptyMessage={
             transactions.length === 0
