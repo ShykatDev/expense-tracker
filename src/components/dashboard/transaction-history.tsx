@@ -72,7 +72,7 @@ export function TransactionHistory({
 
   if (groups.length === 0) {
     return (
-      <Card className="items-center justify-center px-6 py-10 text-center text-sm text-white/40">
+      <Card className="items-center justify-center px-6 py-10 text-center text-sm text-white/50">
         {emptyMessage}
       </Card>
     );
@@ -88,8 +88,8 @@ export function TransactionHistory({
         return (
           <div key={group.label} className="flex flex-col gap-2">
             <div className="flex items-center justify-between px-1 text-xs">
-              <span className="font-medium text-white/45">{group.label}</span>
-              <span className="tabular-nums text-white/30">
+              <span className="font-medium text-white/50">{group.label}</span>
+              <span className="tabular-nums text-white/50">
                 {net >= 0 ? "+" : "−"}
                 {formatCurrency(Math.abs(net))}
               </span>
@@ -160,7 +160,7 @@ function TransactionRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm text-white">{transaction.category}</span>
-        <span className="block text-xs text-white/40">
+        <span className="block text-xs text-white/50">
           {isIncome ? "Income" : "Expense"}
           {time && ` · ${time}`}
         </span>

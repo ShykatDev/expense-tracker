@@ -145,6 +145,10 @@
   }
   html {
     @apply font-sans;
+    /* Scrollbars are part of the palette: thin and dark, not the bright
+       default track, wherever the browser shows them (mostly desktop). */
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    scrollbar-width: thin;
   }
 }
 

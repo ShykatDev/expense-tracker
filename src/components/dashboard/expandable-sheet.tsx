@@ -255,7 +255,7 @@ export function ExpandableSheet({
             type="button"
             onClick={() => snapTo(true)}
             tabIndex={expanded ? -1 : 0}
-            className="mx-auto mt-5 flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] text-white/35 transition-colors hover:text-white/60"
+            className="mx-auto mt-5 flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] text-white/50 transition-colors hover:text-white/60"
             style={{ opacity: "calc(1 - var(--sheet-p) * 2)" }}
           >
             <ChevronUp className="size-3.5 animate-bounce [animation-duration:2s]" />

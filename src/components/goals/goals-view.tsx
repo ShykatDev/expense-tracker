@@ -169,15 +169,15 @@ export function GoalsView() {
           {[0, 1, 2].map((index) => (
             <div
               key={index}
-              className="h-14 animate-pulse rounded-lg bg-white/5"
+              className="h-14 animate-pulse rounded-2xl bg-white/5"
             />
           ))}
         </Card>
       ) : rows.length === 0 ? (
         <Card className="items-center justify-center gap-2 px-6 py-10 text-center">
-          <Target className="size-5 text-white/45" />
+          <Target className="size-5 text-white/50" />
           <p className="text-sm font-medium text-white">No goals yet</p>
-          <p className="text-xs text-white/45">
+          <p className="text-xs text-white/50">
             Add a goal and see how close your savings are to affording it.
           </p>
           <SheetButton className="mt-2" onClick={openCreate}>
@@ -293,7 +293,7 @@ export function GoalsView() {
                 </div>
 
                 <div className="flex items-center justify-between gap-3 text-xs tabular-nums">
-                  <span className="text-white/45">
+                  <span className="text-white/50">
                     {isCompleted
                       ? "Completed"
                       : row.funded

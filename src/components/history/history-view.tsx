@@ -103,7 +103,7 @@ export function HistoryView() {
         {/* Filters */}
         <div className="flex flex-col gap-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-white/35" />
+            <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-white/50" />
             <input
               value={query}
               onChange={(event) => {
@@ -112,7 +112,7 @@ export function HistoryView() {
               }}
               placeholder="Search by category"
               aria-label="Search transactions"
-              className="h-12 w-full rounded-full bg-white/6 pr-11 pl-11 text-sm text-white outline-none placeholder:text-white/35 focus:ring-1 focus:ring-white/20"
+              className="h-12 w-full rounded-full bg-white/6 pr-11 pl-11 text-sm text-white outline-none placeholder:text-white/50 focus:ring-1 focus:ring-white/20"
             />
             {query && (
               <button
@@ -122,7 +122,7 @@ export function HistoryView() {
                   setQuery("");
                   resetPaging();
                 }}
-                className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white/45 hover:bg-white/10 hover:text-white"
+                className="absolute top-1/2 right-2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-white/50 hover:bg-white/10 hover:text-white"
               >
                 <X className="size-4" />
               </button>

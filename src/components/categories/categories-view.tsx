@@ -139,7 +139,7 @@ export function CategoriesView() {
       {type === "expense" ? (
         <TargetsSection />
       ) : (
-        <p className="rounded-2xl bg-white/6 px-5 py-4 text-center text-xs text-white/45">
+        <p className="rounded-2xl bg-white/6 px-5 py-4 text-center text-xs text-white/50">
           Targets apply to expense categories. Switch to expenses to set one.
         </p>
       )}
@@ -153,7 +153,7 @@ export function CategoriesView() {
           {[0, 1, 2, 3].map((index) => (
             <div
               key={index}
-              className="h-10 animate-pulse rounded-lg bg-white/5"
+              className="h-10 animate-pulse rounded-2xl bg-white/5"
             />
           ))}
         </Card>

@@ -137,7 +137,7 @@ export function CategorySheet({
             value={custom}
             onChange={(event) => setCustom(event.target.value)}
             placeholder="or type a name, e.g. burger king"
-            className="h-11 min-w-0 flex-1 rounded-full bg-neutral-100 px-4 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus:ring-2 focus:ring-black/10"
+            className="h-11 min-w-0 flex-1 rounded-full bg-neutral-100 px-4 text-sm text-neutral-900 outline-none placeholder:text-neutral-500 focus:ring-2 focus:ring-black/10"
             aria-label="Custom category name"
           />
           <button

@@ -123,7 +123,7 @@ export function TargetsList({
                   <p className={cn("truncate text-sm", isOver ? "text-rose-50" : "text-white/85")}>
                     {row.label}
                   </p>
-                  <p className={cn("text-xs tabular-nums", isOver ? "text-rose-200/60" : "text-white/40")}>
+                  <p className={cn("text-xs tabular-nums", isOver ? "text-rose-200/60" : "text-white/50")}>
                     {formatCurrency(row.spent)} of {formatCurrency(row.cap)}
                   </p>
                 </div>
@@ -151,7 +151,7 @@ export function TargetsList({
                     >
                       {formatCurrency(remaining)}
                     </span>
-                    <span className={cn("block text-[11px]", isNear ? "text-amber-200/60" : "text-white/40")}>
+                    <span className={cn("block text-[11px]", isNear ? "text-amber-200/60" : "text-white/50")}>
                       {isNear ? "almost there" : "left"}
                     </span>
                   </span>
@@ -177,7 +177,7 @@ export function TargetsList({
                 <span
                   className={cn(
                     "w-10 shrink-0 text-right text-[11px] tabular-nums",
-                    isOver ? "font-medium text-rose-300" : isNear ? "text-amber-200/80" : "text-white/40",
+                    isOver ? "font-medium text-rose-300" : isNear ? "text-amber-200/80" : "text-white/50",
                   )}
                 >
                   {percent}%

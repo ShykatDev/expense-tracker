@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 const TONE_STYLES: Record<SavingsTone, { icon: typeof Sparkles; dot: string; text: string }> = {
   great: { icon: Sparkles, dot: "bg-emerald-400/20 text-emerald-300", text: "text-emerald-200" },
-  good: { icon: ThumbsUp, dot: "bg-sky-400/20 text-sky-300", text: "text-sky-100" },
+  good: { icon: ThumbsUp, dot: "bg-[#2a55b0]/30 text-[#a9c4ff]", text: "text-[#d6e4ff]" },
   tight: { icon: Scale, dot: "bg-amber-400/20 text-amber-300", text: "text-amber-100" },
   over: { icon: TriangleAlert, dot: "bg-rose-400/20 text-rose-300", text: "text-rose-100" },
   neutral: { icon: Minus, dot: "bg-white/15 text-white/70", text: "text-white" },
@@ -110,7 +110,7 @@ function Figure({
       type="button"
       onClick={onClick}
       aria-label={`${label} ${formatCurrency(value)}. Add ${label.toLowerCase()}`}
-      className="flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-1 transition-colors hover:bg-white/5"
+      className="flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-1 transition-colors hover:bg-white/5"
     >
       <span className="flex items-center gap-1.5 text-xs text-white/55">
         <span className={cn("flex size-4.5 items-center justify-center rounded-full", iconClass)}>

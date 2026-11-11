@@ -146,7 +146,7 @@ export function TargetsSection() {
           {[0, 1].map((index) => (
             <div
               key={index}
-              className="h-10 animate-pulse rounded-lg bg-white/5"
+              className="h-10 animate-pulse rounded-2xl bg-white/5"
             />
           ))}
         </Card>

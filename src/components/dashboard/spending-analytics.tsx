@@ -289,7 +289,7 @@ export function SpendingAnalytics({
       {/* Header */}
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs text-white/40">Spending · {rangeLabel}</p>
+          <p className="text-xs text-white/50">Spending · {rangeLabel}</p>
           <p className="mt-1 font-display text-[1.6rem] leading-none font-semibold tracking-tight tabular-nums text-white/90">
             {formatCurrency(total)}
           </p>
@@ -306,7 +306,7 @@ export function SpendingAnalytics({
               className="absolute inset-x-0 border-t border-dashed border-white/10 transition-[top] duration-500 animate-in fade-in"
               style={{ top: `${yOf(average) * 100}%` }}
             >
-              <span className="absolute bottom-1 left-0 text-[10px] tabular-nums text-white/30">
+              <span className="absolute bottom-1 left-0 text-[10px] tabular-nums text-white/50">
                 avg {formatCompactNumber(Math.round(average))}
               </span>
             </div>
@@ -369,7 +369,8 @@ export function SpendingAnalytics({
               </div>
               <p
                 className={cn(
-                  "absolute -translate-y-full text-right text-[11px] whitespace-nowrap transition-[top] duration-300",
+                  // A quiet backing keeps the label legible where it crosses the line.
+                  "absolute -translate-y-full rounded-full bg-[#0d0e11]/85 px-1.5 py-0.5 text-right text-[11px] whitespace-nowrap transition-[top] duration-300",
                   labelAlign === "left" ? "left-0" : labelAlign === "right" ? "right-0" : "-translate-x-1/2",
                 )}
                 style={{ top: `calc(${yOf(active.total) * 100}% - 0.6rem)` }}
@@ -378,7 +379,7 @@ export function SpendingAnalytics({
                   {active.total > 0 ? formatCurrency(active.total) : "No spending"}
                 </span>
                 {detailed && activeVsAverage !== null && (
-                  <span className="text-white/35">
+                  <span className="text-white/50">
                     {" · "}
                     {Math.abs(activeVsAverage) < 5
                       ? "about avg"
@@ -401,13 +402,13 @@ export function SpendingAnalytics({
                 onClick={() => setSelectedKey(bucket.key)}
                 aria-pressed={index === activeIndex}
                 aria-label={`${bucketName(bucket)}: ${formatCurrency(bucket.total)}`}
-                className="rounded-xl outline-none focus-visible:bg-white/4"
+                className="rounded-2xl outline-none focus-visible:bg-white/4"
               />
             ))}
           </div>
 
           {!hasData && (
-            <p className="pointer-events-none absolute inset-x-0 top-1/3 text-center text-xs text-white/30">
+            <p className="pointer-events-none absolute inset-x-0 top-1/3 text-center text-xs text-white/50">
               No spending in this period yet
             </p>
           )}
@@ -424,7 +425,7 @@ export function SpendingAnalytics({
               key={bucket.key}
               className={cn(
                 "truncate text-center text-[11px] lowercase transition-colors",
-                index === activeIndex ? "font-semibold text-white/85" : "text-white/30",
+                index === activeIndex ? "font-semibold text-white/85" : "text-white/50",
               )}
             >
               {bucket.sub ?? bucket.label}
@@ -436,7 +437,7 @@ export function SpendingAnalytics({
       {/* Details, only in the expanded sheet */}
       {detailed && (
         <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-1 duration-500">
-          <p className="text-xs leading-snug text-white/40">
+          <p className="text-xs leading-snug text-white/50">
             {change === null ? (
               `No data for the previous ${PERIOD_NOUN[range]} to compare with.`
             ) : (
@@ -470,7 +471,7 @@ export function SpendingAnalytics({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 px-3 text-center">
-      <p className="truncate text-[10px] text-white/35">{label}</p>
+      <p className="truncate text-[10px] text-white/50">{label}</p>
       <p className="mt-0.5 truncate text-[13px] font-medium tabular-nums text-white/80">{value}</p>
     </div>
   );
@@ -495,7 +496,7 @@ function RangeTabs({
           aria-label={option.label}
           className={cn(
             "flex h-8 min-w-8 items-center justify-center rounded-full text-xs font-medium transition-colors duration-200",
-            value === option.value ? "bg-white/8 text-white/90" : "text-white/30 hover:text-white/70",
+            value === option.value ? "bg-white/8 text-white/90" : "text-white/50 hover:text-white/70",
           )}
         >
           {option.label.charAt(0)}
@@ -526,9 +527,9 @@ export function SpentCategories({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col items-center gap-0.5">
-        <h2 className="text-xs font-medium text-white/45">Spent Category</h2>
+        <h2 className="text-xs font-medium text-white/50">Spent Category</h2>
         {total > 0 && (
-          <p className="text-xs tabular-nums text-white/30">
+          <p className="text-xs tabular-nums text-white/50">
             {formatCurrency(total)} across {rows.length}{" "}
             {rows.length === 1 ? "category" : "categories"}
           </p>
@@ -536,7 +537,7 @@ export function SpentCategories({
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded-3xl bg-white/6 px-5 py-6 text-center text-sm text-white/40">
+        <p className="rounded-3xl bg-white/6 px-5 py-6 text-center text-sm text-white/50">
           Nothing spent this month yet
         </p>
       ) : (
@@ -575,7 +576,7 @@ export function SpentCategories({
                         style={{ width: `${Math.max(share * 100, 2)}%` }}
                       />
                     </div>
-                    <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-white/40">
+                    <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-white/50">
                       {Math.round(share * 100)}%
                     </span>
                   </div>

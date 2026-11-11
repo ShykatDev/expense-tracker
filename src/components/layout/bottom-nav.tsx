@@ -104,7 +104,7 @@ export function BottomNav() {
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex items-center justify-center rounded-full transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-90",
-                  isActive ? "text-white" : "text-white/45 hover:text-white/80",
+                  isActive ? "text-white" : "text-white/50 hover:text-white/80",
                 )}
                 style={{ width: SLOT, height: SLOT }}
               >

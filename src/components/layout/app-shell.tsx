@@ -146,7 +146,7 @@ export function SheetSection({
   return (
     <section className="flex flex-col gap-4">
       {centered ? (
-        <h2 className="text-center text-xs font-medium text-white/45">
+        <h2 className="text-center text-xs font-medium text-white/50">
           {title}
         </h2>
       ) : (
@@ -154,7 +154,7 @@ export function SheetSection({
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-white">{title}</h2>
             {subtitle && (
-              <p className="mt-0.5 text-xs text-white/45">{subtitle}</p>
+              <p className="mt-0.5 text-xs text-white/50">{subtitle}</p>
             )}
           </div>
           {action}
@@ -216,7 +216,7 @@ export function RowIconButton({
     <button
       type="button"
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-full text-white/45 transition-colors hover:bg-white/10 hover:text-white active:scale-90 [&_svg]:size-3.5",
+        "flex size-8 shrink-0 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white active:scale-90 [&_svg]:size-3.5",
         className,
       )}
       {...props}
