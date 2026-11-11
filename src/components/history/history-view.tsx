@@ -16,13 +16,13 @@ import {
   AppHero,
   AppSheet,
   AppShell,
+  HeroAmount,
   SheetButton,
   SheetToggle,
 } from "@/components/layout/app-shell";
 import { TRANSITION } from "@/components/layout/page-transition";
 import {
   computeTotals,
-  formatCurrency,
   isWithinDateRange,
   type DateRangeFilter,
   type Transaction,
@@ -90,7 +90,7 @@ export function HistoryView() {
     <AppShell>
       <AppHero
         label={isFiltered ? "Net for this view" : "All-time balance"}
-        value={formatCurrency(totals.balance)}
+        value={<HeroAmount value={totals.balance} />}
         action={{ label: "Add transaction", onClick: () => router.push("/transaction", { transitionTypes: [...TRANSITION.sheetUp] }) }}
       >
         <p className="text-xs tabular-nums text-white/55">

@@ -216,7 +216,7 @@ function TransactionSheet({
                   className="size-6"
                 />
               </span>
-              <DialogTitle className="mt-2 text-3xl font-bold tabular-nums">
+              <DialogTitle className="mt-2 font-display text-3xl font-bold tabular-nums">
                 {isIncome ? "+" : "−"}
                 {formatCurrency(shown.amount)}
               </DialogTitle>

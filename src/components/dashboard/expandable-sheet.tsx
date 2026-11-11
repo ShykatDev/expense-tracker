@@ -5,12 +5,16 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Space the collapsed sheet keeps for its preview (chart, hint and bottom nav). */
-const MIN_PEEK = 390;
+/**
+ * The least room the collapsed sheet keeps for its preview: the chart's
+ * header, plot and labels plus the floating bottom nav. The swipe hint can
+ * tuck behind the nav on short screens.
+ */
+const MIN_PEEK = 340;
 /** Space between the hero's header row and the top of the open sheet. */
 const HEADER_GAP = 16;
 /** How far the sheet tucks up under the bottom of the hero when collapsed. */
-const HERO_OVERLAP = 40;
+const HERO_OVERLAP = 28;
 /** A flick faster than this (px per ms) decides the direction on its own. */
 const FLICK = 0.45;
 const SNAP = "520ms cubic-bezier(0.22, 1, 0.36, 1)";
@@ -201,6 +205,8 @@ export function ExpandableSheet({
   return (
     <div
       ref={rootRef}
+      // The sheet runs its own touch and wheel gestures, so Lenis stays out.
+      data-lenis-prevent
       className="reveal-target relative h-dvh overflow-hidden overscroll-none bg-black md:h-[calc(100dvh-3rem)] md:rounded-[2rem] md:border md:border-white/10"
       style={{ "--sheet-p": 0 } as React.CSSProperties}
     >
@@ -239,7 +245,12 @@ export function ExpandableSheet({
         >
           {peek(expanded)}
 
-          {/* A nudge to swipe, fading out as the sheet opens. */}
+          {/* A nudge to swipe. It fades out and its space collapses as the
+              sheet opens, so it doesn't leave a hole above the details. */}
+          <div
+            className="overflow-hidden"
+            style={{ height: "calc((1 - var(--sheet-p)) * 3rem)" }}
+          >
           <button
             type="button"
             onClick={() => snapTo(true)}
@@ -250,9 +261,10 @@ export function ExpandableSheet({
             <ChevronUp className="size-3.5 animate-bounce [animation-duration:2s]" />
             Swipe up for details
           </button>
+          </div>
 
           <div
-            className="flex flex-col gap-10 pt-4 pb-[calc(7rem+env(safe-area-inset-bottom))]"
+            className="flex flex-col gap-10 pt-10 pb-[calc(7rem+env(safe-area-inset-bottom))]"
             style={{ opacity: "clamp(0, calc(var(--sheet-p) * 2 - 0.6), 1)" }}
             aria-hidden={!expanded || undefined}
           >

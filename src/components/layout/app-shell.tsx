@@ -1,10 +1,12 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Plus, TrendingDown } from "lucide-react";
 import * as React from "react";
 
 import { AppMark } from "@/components/brand/app-logo";
 import { MonthPicker } from "@/components/dashboard/navbar";
+import { AnimatedNumber } from "@/components/ui/animated-number";
+import { formatCurrency } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
 /**
@@ -57,8 +59,15 @@ export function AppHero({
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent"
       />
 
-      <header data-hero-header className="relative z-10 flex items-center justify-between gap-3">
-        <div className="flex size-10 items-center justify-center" role="img" aria-label="Pulse">
+      <header
+        data-hero-header
+        className="relative z-10 flex items-center justify-between gap-3"
+      >
+        <div
+          className="flex size-10 items-center justify-center"
+          role="img"
+          aria-label="Pulse"
+        >
           <AppMark className="size-6 text-white" />
         </div>
 
@@ -79,9 +88,12 @@ export function AppHero({
         </div>
       </header>
 
-      <div data-hero-content className="relative flex flex-col items-center pt-12 text-center">
+      <div
+        data-hero-content
+        className="relative flex flex-col items-center pt-12 text-center [@media(max-height:760px)]:pt-6"
+      >
         <p className="text-sm font-semibold text-white/90">{label}</p>
-        <div className="mt-1 text-[3.25rem] leading-tight font-bold tracking-tight tabular-nums text-white">
+        <div className="mt-1 font-display text-[3.25rem] leading-tight font-bold tracking-tight tabular-nums text-white">
           {value}
         </div>
         {children}
@@ -134,12 +146,16 @@ export function SheetSection({
   return (
     <section className="flex flex-col gap-4">
       {centered ? (
-        <h2 className="text-center text-xs font-medium text-white/45">{title}</h2>
+        <h2 className="text-center text-xs font-medium text-white/45">
+          {title}
+        </h2>
       ) : (
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-white">{title}</h2>
-            {subtitle && <p className="mt-0.5 text-xs text-white/45">{subtitle}</p>}
+            {subtitle && (
+              <p className="mt-0.5 text-xs text-white/45">{subtitle}</p>
+            )}
           </div>
           {action}
         </div>
@@ -222,5 +238,30 @@ export function SheetButton({
       )}
       {...props}
     />
+  );
+}
+
+/**
+ * A hero money figure that counts to its value and makes a negative amount
+ * unmistakable: it turns a soft red and gains a small "down" badge, so a
+ * deficit never reads like an ordinary balance at a glance.
+ */
+export function HeroAmount({ value }: { value: number }) {
+  const negative = value < 0;
+  return (
+    <span className="inline-flex items-center justify-center gap-2.5">
+      {negative && (
+        <span
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/25 animate-in fade-in zoom-in-75 duration-300"
+          aria-hidden="true"
+        >
+          <TrendingDown className="size-[1.1rem]" strokeWidth={2.2} />
+        </span>
+      )}
+      <span className={cn("transition-colors duration-500", negative && "text-rose-200")}>
+        <AnimatedNumber value={value} format={formatCurrency} />
+      </span>
+      {negative && <span className="sr-only">(deficit)</span>}
+    </span>
   );
 }

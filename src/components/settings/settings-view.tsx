@@ -13,6 +13,7 @@ import {
   SheetSection,
 } from "@/components/layout/app-shell";
 import { useTargets } from "@/components/targets/targets-provider";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -70,7 +71,7 @@ export function SettingsView() {
 
   return (
     <AppShell>
-      <AppHero label="Settings" value={transactions.length}>
+      <AppHero label="Settings" value={<AnimatedNumber value={transactions.length} />}>
         <p className="text-xs text-white/55">
           {transactions.length === 1 ? "entry" : "entries"} stored on this device
         </p>

@@ -290,7 +290,7 @@ export function SpendingAnalytics({
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs text-white/40">Spending · {rangeLabel}</p>
-          <p className="mt-1 text-[1.6rem] leading-none font-semibold tracking-tight tabular-nums text-white/90">
+          <p className="mt-1 font-display text-[1.6rem] leading-none font-semibold tracking-tight tabular-nums text-white/90">
             {formatCurrency(total)}
           </p>
         </div>
@@ -343,10 +343,30 @@ export function SpendingAnalytics({
               className="pointer-events-none absolute inset-y-0 transition-[left] duration-300 ease-out"
               style={{ left: `${xOf(activeIndex) * 100}%` }}
             >
+              {/* The marker: a 2px ring in the hero's radial blue around a
+                  frosted, translucent centre: the line shows through it softly
+                  blurred. The ring is
+                  a gradient disc with its middle masked out. */}
               <div
-                className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0d0e11] ring-2 ring-white/60 transition-[top] duration-300"
+                className="absolute size-[1.125rem] -translate-x-1/2 -translate-y-1/2 transition-[top] duration-300"
                 style={{ top: `${yOf(active.total) * 100}%` }}
-              />
+              >
+                <span
+                  className="absolute inset-0.5 rounded-full bg-[#0d0e11]/30 backdrop-blur-[3px]"
+                  style={{ WebkitBackdropFilter: "blur(3px)" }}
+                />
+                <span
+                  className="absolute inset-0 rounded-full p-0.5"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 30% 25%, #b9d0ff 0%, #4b7ad6 40%, #14398a 75%, #0a1f4f 100%)",
+                    WebkitMask:
+                      "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                    WebkitMaskComposite: "xor",
+                    mask: "linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)",
+                  }}
+                />
+              </div>
               <p
                 className={cn(
                   "absolute -translate-y-full text-right text-[11px] whitespace-nowrap transition-[top] duration-300",

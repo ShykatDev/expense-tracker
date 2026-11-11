@@ -4,13 +4,32 @@ import { TransactionsProvider } from "@/components/dashboard/transactions-provid
 import { GoalsProvider } from "@/components/goals/goals-provider";
 import { TargetsProvider } from "@/components/targets/targets-provider";
 import { AppToaster } from "@/components/brand/app-toaster";
+import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Geist_Mono, Inter, Noto_Sans_Bengali } from "next/font/google";
+import "lenis/dist/lenis.css";
 import "./globals.css";
 
-const fontSans = Plus_Jakarta_Sans({
-  variable: "--font-sans-loaded",
+/*
+ * Type: on Apple devices the app uses the system fonts — SF Pro for text and
+ * SF Pro Rounded for big numbers (see --font-sans / --font-display in
+ * globals.css). Apple doesn't license SF for embedding, so nothing is
+ * downloaded for it; Inter, its closest open match, stands in elsewhere.
+ */
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+});
+
+/*
+ * Only here for the taka sign (৳), which SF Pro and Inter don't include —
+ * without it the browser borrows a mismatched glyph. Not preloaded: it is
+ * fetched only when a ৳ actually renders.
+ */
+const bengali = Noto_Sans_Bengali({
+  variable: "--font-bengali",
+  subsets: ["bengali"],
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
@@ -44,7 +63,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       // `app-loading` keeps the page blurred behind the splash screen until it
       // reveals it (see .reveal-target in globals.css).
-      className={`dark app-loading ${fontSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`dark app-loading ${inter.variable} ${bengali.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
       style={{ colorScheme: "dark" }}
     >
@@ -61,7 +80,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <TransactionsProvider>
             <SplashScreen />
             <TargetsProvider>
-              <GoalsProvider>{children}</GoalsProvider>
+              <GoalsProvider>
+                <SmoothScroll>{children}</SmoothScroll>
+              </GoalsProvider>
             </TargetsProvider>
           </TransactionsProvider>
         </CategoriesProvider>

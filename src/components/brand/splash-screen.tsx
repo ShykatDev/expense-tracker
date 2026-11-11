@@ -73,7 +73,7 @@ export function SplashScreen() {
           animated
           className="size-24 rounded-[1.6rem] shadow-[0_20px_60px_-15px_rgba(59,130,246,0.55)] animate-in fade-in zoom-in-90 duration-700"
         />
-        <p className="mt-6 text-3xl font-bold tracking-tight text-white animate-in fade-in slide-in-from-bottom-2 duration-700 fill-mode-both [animation-delay:150ms]">
+        <p className="mt-6 font-display text-3xl font-bold tracking-tight text-white animate-in fade-in slide-in-from-bottom-2 duration-700 fill-mode-both [animation-delay:150ms]">
           Pulse
         </p>
         <p className="mt-1.5 text-sm text-white/55 animate-in fade-in slide-in-from-bottom-2 duration-700 fill-mode-both [animation-delay:300ms]">

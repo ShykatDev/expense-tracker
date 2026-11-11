@@ -13,6 +13,7 @@ import {
   AppHero,
   AppSheet,
   AppShell,
+  HeroAmount,
   RowIconButton,
   SheetButton,
   SheetSection,
@@ -147,7 +148,7 @@ export function GoalsView() {
     <AppShell>
       <AppHero
         label="Saved this month"
-        value={formatCurrency(savings)}
+        value={<HeroAmount value={savings} />}
         showMonthPicker
         action={{ label: "Add goal", onClick: openCreate }}
       >

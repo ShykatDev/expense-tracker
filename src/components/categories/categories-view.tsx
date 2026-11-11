@@ -17,6 +17,7 @@ import {
   SheetSection,
   SheetToggle,
 } from "@/components/layout/app-shell";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -112,7 +113,7 @@ export function CategoriesView() {
     <AppShell>
       <AppHero
         label={type === "expense" ? "Expense Categories" : "Income Sources"}
-        value={visibleCount}
+        value={<AnimatedNumber value={visibleCount} />}
         action={{
           label: "Add category",
           onClick: () => {

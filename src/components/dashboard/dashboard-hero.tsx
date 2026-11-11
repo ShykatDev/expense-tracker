@@ -11,8 +11,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { AppHero } from "@/components/layout/app-shell";
+import { AppHero, HeroAmount } from "@/components/layout/app-shell";
 import { TRANSITION } from "@/components/layout/page-transition";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import type { SavingsTone, SavingsVerdict } from "@/lib/savings";
 import { formatCurrency } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
@@ -47,18 +48,18 @@ export function DashboardHero({
   return (
     <AppHero
       label="Total Savings"
-      value={formatCurrency(savings)}
+      value={<HeroAmount value={savings} />}
       showMonthPicker
       action={{ label: "Add transaction", onClick: () => router.push("/transaction", { transitionTypes: [...TRANSITION.sheetUp] }) }}
     >
       {/* Verdict */}
-      <div className="mt-4 flex max-w-sm items-start gap-2.5 rounded-2xl bg-white/8 px-3.5 py-2.5 text-left ring-1 ring-white/10">
+      <div className="mt-4 flex max-w-sm items-start [@media(max-height:760px)]:mt-3 gap-2.5 rounded-2xl bg-white/8 px-3.5 py-2.5 text-left ring-1 ring-white/10">
         <span className={cn("mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full", tone.dot)}>
           <ToneIcon className="size-3.5" />
         </span>
         <div className="min-w-0">
           <p className={cn("text-sm font-semibold", tone.text)}>{verdict.title}</p>
-          <p className="text-xs leading-relaxed text-white/60">{verdict.detail}</p>
+          <p className="text-xs leading-relaxed text-white/60 [@media(max-height:700px)]:hidden">{verdict.detail}</p>
         </div>
       </div>
 
@@ -71,7 +72,7 @@ export function DashboardHero({
 export function HeroFigures({ income, expense }: { income: number; expense: number }) {
   const router = useRouter();
   return (
-    <div className="mt-6 flex w-full max-w-sm items-center">
+    <div className="mt-6 flex w-full max-w-sm items-center [@media(max-height:760px)]:mt-4">
       <Figure
         label="Income"
         value={income}
@@ -117,8 +118,8 @@ function Figure({
         </span>
         {label}
       </span>
-      <span className="text-lg font-semibold tabular-nums text-white">
-        {formatCurrency(value)}
+      <span className="font-display text-lg font-semibold tabular-nums text-white">
+        <AnimatedNumber value={value} format={formatCurrency} />
       </span>
     </button>
   );

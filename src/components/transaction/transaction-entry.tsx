@@ -220,7 +220,7 @@ export function TransactionEntry() {
             aria-live="polite"
             aria-label={`Amount ${amount || "0"}`}
             className={cn(
-              "font-normal tracking-tight tabular-nums whitespace-nowrap transition-[font-size] duration-150",
+              "font-display font-normal tracking-tight tabular-nums whitespace-nowrap transition-[font-size] duration-150",
               amountLength > 11 ? "text-4xl" : amountLength > 8 ? "text-5xl" : "text-[3.25rem]",
             )}
           >

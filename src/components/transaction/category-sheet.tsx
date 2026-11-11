@@ -76,6 +76,7 @@ export function CategorySheet({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        data-lenis-prevent
         aria-label={title}
         tabIndex={-1}
         className={cn(

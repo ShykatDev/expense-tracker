@@ -26,10 +26,18 @@ function isActiveRoute(href: string, pathname: string | null) {
   return href === "/" ? pathname === "/" : Boolean(pathname?.startsWith(href));
 }
 
+/** Tab size and gap, in px. The indicator's position is computed from these. */
+const SLOT = 44;
+const GAP = 4;
+
 /**
  * The app's navigation: a frosted, floating pill of route icons above the
- * home indicator, with Home in the centre. The active page takes a soft tint
- * of the hero's blue. Every slot is a fixed width so Home stays dead centre.
+ * home indicator, with Home in the centre.
+ *
+ * A single soft highlight sits behind the active tab and glides to the new
+ * one on navigation with a springy overshoot, squishing as it travels, and
+ * the newly active icon pops. Every slot is the same width, so the glide is
+ * a plain translate.
  *
  * Each link tags its navigation as moving right or left of the current tab,
  * which `PageTransition` turns into a matching slide. The pill is named for
@@ -50,12 +58,33 @@ export function BottomNav() {
         would leave the blur nothing behind it to blur.
       */}
       <ul
-        className="pointer-events-auto flex items-center gap-1 rounded-full bg-[#1a1b20]/40 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-white/12 backdrop-blur-xl backdrop-saturate-[1.8]"
+        className="pointer-events-auto relative flex items-center rounded-full bg-[#1a1b20]/40 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-white/12 backdrop-blur-xl backdrop-saturate-[1.8]"
         style={{
+          gap: GAP,
           viewTransitionName: "bottom-nav",
           WebkitBackdropFilter: "blur(24px) saturate(1.8)",
         }}
       >
+        {/* The gliding highlight: it springs past its target and settles
+            back, while the inner blob squishes as it travels. */}
+        {currentIndex !== -1 && (
+          <li
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1.5 left-1.5 transition-transform duration-[560ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
+            style={{
+              width: SLOT,
+              height: SLOT,
+              transform: `translateX(${currentIndex * (SLOT + GAP)}px)`,
+            }}
+          >
+            <span
+              // Re-keyed on every move so the squish replays each time.
+              key={currentIndex}
+              className="nav-blob block size-full rounded-full bg-white/[0.13] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14),0_4px_14px_-4px_rgba(0,0,0,0.6)] ring-1 ring-white/10"
+            />
+          </li>
+        )}
+
         {ROUTES.map((route, index) => {
           const isActive = index === currentIndex;
           const direction =
@@ -67,25 +96,24 @@ export function BottomNav() {
           const Icon = route.icon;
 
           return (
-            <li key={route.href}>
+            <li key={route.href} className="relative">
               <Link
                 href={route.href}
                 transitionTypes={direction}
                 aria-label={route.label}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "relative flex items-center justify-center rounded-full transition-[background-color,color,box-shadow,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-90",
-                  "size-11",
-                  isActive
-                    ? "bg-[#2a55b0]/30 text-[#a9c4ff] ring-1 ring-[#6f97e6]/30"
-                    : "text-white/50 hover:bg-white/8 hover:text-white/85",
+                  "flex items-center justify-center rounded-full transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-90",
+                  isActive ? "text-white" : "text-white/45 hover:text-white/80",
                 )}
+                style={{ width: SLOT, height: SLOT }}
               >
-                <Icon className="size-[1.15rem]" strokeWidth={isActive ? 2.1 : 1.8} />
-                {/* A small dot under the active tab, for a second cue. */}
-                {isActive && (
-                  <span className="absolute bottom-1 size-1 rounded-full bg-[#a9c4ff] animate-in fade-in zoom-in duration-300" />
-                )}
+                <Icon
+                  // Re-keyed when it becomes active so the pop plays.
+                  key={isActive ? "active" : "idle"}
+                  className={cn("size-[1.15rem]", isActive && "nav-pop")}
+                  strokeWidth={isActive ? 2.1 : 1.8}
+                />
               </Link>
             </li>
           );
