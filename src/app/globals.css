@@ -445,3 +445,103 @@ html.app-loading .reveal-nav {
 .sparkle-flash {
   animation: sparkle-flash 700ms ease-out forwards;
 }
+
+/*
+ * A slow light that circles an element's edge (see components/ui/
+ * glow-border.tsx). Only the transform animates, so it stays on the
+ * compositor.
+ */
+@keyframes nav-glow-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.glow-sweep {
+  transform: translate(-50%, -50%);
+  will-change: transform;
+  animation: nav-glow-spin 7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-sweep {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
+/* Goal progress: the last filled tick's halo breathes (opacity only). */
+@keyframes tick-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.tick-glow {
+  animation: tick-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tick-glow {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+/*
+ * An affordable goal's "Got …" button invites the tap: every few seconds a
+ * light streak sweeps across it and its check badge bounces. Transform-only,
+ * so it stays on the compositor.
+ */
+@keyframes claim-shine {
+  0%,
+  40% {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  85%,
+  100% {
+    transform: translateX(300%) skewX(-20deg);
+  }
+}
+
+.claim-shine {
+  animation: claim-shine 3.6s ease-in-out infinite;
+}
+
+@keyframes claim-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  70% {
+    transform: translateY(-4px) scale(1.12);
+  }
+  80% {
+    transform: translateY(0) scale(0.94);
+  }
+  88% {
+    transform: translateY(-1px) scale(1.03);
+  }
+}
+
+.claim-bounce {
+  animation: claim-bounce 3.6s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .claim-shine {
+    display: none;
+  }
+
+  .claim-bounce {
+    animation: none;
+  }
+}

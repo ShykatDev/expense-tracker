@@ -203,6 +203,7 @@ export function GoalsView() {
                     <GoalCard
                       key={row.goal.id}
                       goal={row.goal}
+                      savings={savings}
                       funded={row.funded}
                       progress={row.progress}
                       onComplete={() => setCompleting(row.goal)}
@@ -242,7 +243,11 @@ export function GoalsView() {
                         >
                           Reopen
                         </SheetButton>
-                        <RowIconButton aria-label={`Delete ${row.goal.label}`} onClick={() => setDeleting(row.goal)}>
+                        <RowIconButton
+                          aria-label={`Delete ${row.goal.label}`}
+                          onClick={() => setDeleting(row.goal)}
+                          className={SUBTLE_ICON_BUTTON}
+                        >
                           <Trash2 />
                         </RowIconButton>
                       </div>
@@ -309,19 +314,77 @@ export function GoalsView() {
   );
 }
 
+/** Edit / delete on goal cards: a soft filled circle so they read as buttons. */
+const SUBTLE_ICON_BUTTON = "bg-white/6";
+
 /** A goal's chosen icon, rendered without creating a component per render. */
 function GoalIcon({ iconKey, className }: { iconKey?: string; className?: string }) {
   return React.createElement(getCategoryIconByKey(iconKey), { className });
 }
 
+/** Linear blend between two "#rrggbb" colours. */
+function mixHex(from: string, to: string, t: number) {
+  const f = parseInt(from.slice(1), 16);
+  const g = parseInt(to.slice(1), 16);
+  const channel = (shift: number) =>
+    Math.round(((f >> shift) & 255) + (((g >> shift) & 255) - ((f >> shift) & 255)) * t);
+  return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`;
+}
+
 /**
- * One active goal, kept to the essentials: icon, name and price, a progress
- * bar towards it, and a clear "Got …" action. The action turns white once
- * savings cover the goal, but it is always available — a goal can be a
- * gift, or bought on a stretch. A deadline, if set, is a small chip.
+ * Goal progress as a row of fine ticks. Filled ticks stand taller and run as
+ * one gradient, deep navy to the hero's blue (pale blue once affordable),
+ * and the last filled tick glows softly — a radial halo that breathes with
+ * an opacity-only animation, so it stays cheap on mobile.
+ */
+function TickProgress({ progress, funded }: { progress: number; funded: boolean }) {
+  const TICKS = 56;
+  const filled = Math.round(progress * TICKS);
+  const start = "#16306d";
+  const end = funded ? "#dfe8ff" : "#7fa3ec";
+
+  return (
+    <div className="flex h-5 items-center justify-between" aria-hidden="true">
+      {Array.from({ length: TICKS }, (_, i) => {
+        const isFilled = i < filled;
+        const isLast = isFilled && i === filled - 1;
+        const color = isFilled ? mixHex(start, end, filled > 1 ? i / (filled - 1) : 1) : undefined;
+        return (
+          <span key={i} className="relative flex h-full w-[2.5px] items-center justify-center">
+            {isLast && (
+              <span
+                className="tick-glow pointer-events-none absolute size-6 rounded-full"
+                style={{
+                  background: `radial-gradient(circle, ${funded ? "rgba(223,232,255,0.55)" : "rgba(127,163,236,0.6)"} 0%, rgba(127,163,236,0) 70%)`,
+                }}
+              />
+            )}
+            <span
+              className={cn(
+                "relative w-full rounded-full transition-[height,background-color] duration-500",
+                isFilled ? "h-4" : "h-2.5 bg-white/12",
+                isLast && "h-5",
+              )}
+              style={{ backgroundColor: color, transitionDelay: `${i * 8}ms` }}
+            />
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * One active goal. A header with the icon tile, name, price and a deadline
+ * chip; the progress as a large percentage with what's saved, over a
+ * progress bar; and a "Got …" button — a quiet outline until savings cover
+ * the goal, then solid pale blue with a periodic shine and bounce that
+ * invite the tap. The button is always available — a goal can
+ * be a gift, or bought on a stretch.
  */
 function GoalCard({
   goal,
+  savings,
   funded,
   progress,
   onComplete,
@@ -329,6 +392,7 @@ function GoalCard({
   onDelete,
 }: {
   goal: Goal;
+  savings: number;
   funded: boolean;
   progress: number;
   onComplete: () => void;
@@ -338,17 +402,18 @@ function GoalCard({
   const daysLeft = goal.targetDate ? daysUntil(goal.targetDate) : null;
   const overdue = daysLeft !== null && daysLeft < 0;
   const percent = Math.round(progress * 100);
+  const saved = Math.min(Math.max(savings, 0), goal.targetAmount);
 
   return (
-    <div className="flex flex-col gap-4 rounded-3xl bg-white/6 p-4">
+    <div className="flex flex-col gap-5 rounded-3xl bg-white/6 p-4">
+      {/* Header */}
       <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/8 text-white">
-          <GoalIcon iconKey={goal.iconKey} className="size-5" />
+        <span className="flex size-10 shrink-0 items-center justify-center text-[#b9d0ff]">
+          <GoalIcon iconKey={goal.iconKey} className="size-6" />
         </span>
-
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="truncate text-base text-white">{goal.label}</p>
+            <p className="truncate text-base font-medium text-white">{goal.label}</p>
             {daysLeft !== null && (
               <span
                 className={cn(
@@ -360,51 +425,64 @@ function GoalCard({
               </span>
             )}
           </div>
-          <p className="font-display text-lg leading-tight font-semibold tabular-nums text-white">
-            {formatCurrency(goal.targetAmount)}
-          </p>
+          <p className="text-xs tabular-nums text-white/50">{formatCurrency(goal.targetAmount)} goal</p>
         </div>
-
-        <div className="-mr-1 flex shrink-0 self-start">
-          <RowIconButton aria-label={`Edit ${goal.label}`} onClick={onEdit}>
+        <div className="flex shrink-0 gap-1.5 self-start">
+          <RowIconButton aria-label={`Edit ${goal.label}`} onClick={onEdit} className={SUBTLE_ICON_BUTTON}>
             <Pencil />
           </RowIconButton>
-          <RowIconButton aria-label={`Delete ${goal.label}`} onClick={onDelete}>
+          <RowIconButton aria-label={`Delete ${goal.label}`} onClick={onDelete} className={SUBTLE_ICON_BUTTON}>
             <Trash2 />
           </RowIconButton>
         </div>
       </div>
 
-      <div className="flex items-center gap-3" aria-label={`${percent}% saved towards ${goal.label}`}>
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/8">
-          <div
+      {/* Progress */}
+      <div className="flex flex-col gap-2.5" aria-label={`${percent}% saved towards ${goal.label}`}>
+        <div className="flex items-end justify-between gap-3">
+          <p
             className={cn(
-              "h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-              funded ? "bg-[#d6e4ff]" : "accent-gradient-x",
+              "font-display text-[2rem] leading-none font-semibold tracking-tight tabular-nums",
+              funded ? "text-[#d6e4ff]" : "text-white",
             )}
-            style={{ width: `${Math.max(percent, percent > 0 ? 3 : 0)}%` }}
-          />
+          >
+            {percent}
+            <span className="ml-1 text-lg text-white/50">%</span>
+          </p>
+          <p className="pb-0.5 text-xs tabular-nums text-white/50">
+            {funded ? "Ready to buy" : `${formatCurrency(saved)} saved`}
+          </p>
         </div>
-        <span
-          className={cn(
-            "w-10 shrink-0 text-right text-xs tabular-nums",
-            funded ? "font-medium text-[#d6e4ff]" : "text-white/50",
-          )}
-        >
-          {percent}%
-        </span>
+        <TickProgress progress={progress} funded={funded} />
       </div>
 
+      {/* Action: solid pale blue once affordable, a quiet outline until then. */}
       <button
         type="button"
         onClick={onComplete}
         className={cn(
-          "flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-medium transition-[background-color,transform] duration-200 active:scale-[0.98]",
-          funded ? "bg-white text-black hover:bg-white/90" : "bg-white/8 text-white/85 hover:bg-white/12",
+          "relative flex h-12 w-full items-center justify-center gap-2.5 overflow-hidden rounded-full text-[15px] font-medium transition-[background-color,transform] duration-200 active:scale-[0.98]",
+          funded
+            ? "bg-[#dfe8ff] text-[#0a1f52] hover:bg-[#eaf0ff]"
+            : "bg-transparent text-white/80 ring-1 ring-white/15 hover:bg-white/[0.04] hover:text-white",
         )}
       >
-        <Check className="size-4" strokeWidth={2.4} />
-        <span className="truncate">Got {goal.label}</span>
+        {/* Ready to claim: a light streak sweeps across every few seconds. */}
+        {funded && (
+          <span
+            aria-hidden="true"
+            className="claim-shine pointer-events-none absolute inset-y-0 left-0 w-2/5 bg-linear-to-r from-transparent via-[#8fb0f5]/55 to-transparent"
+          />
+        )}
+        <span
+          className={cn(
+            "relative flex size-5 items-center justify-center rounded-full",
+            funded ? "claim-bounce bg-[#0a1f52] text-[#dfe8ff]" : "bg-white/10 text-white/80",
+          )}
+        >
+          <Check className="size-3" strokeWidth={3} />
+        </span>
+        <span className="relative truncate">Got {goal.label}</span>
       </button>
     </div>
   );

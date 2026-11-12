@@ -29,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
+import { VisibilityToggle } from "@/components/categories/visibility-toggle";
 import { resolveCategories } from "@/lib/categories";
 import type { CustomCategory, TransactionType } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
@@ -188,10 +188,10 @@ export function CategoriesView() {
                     >
                       {isCustom ? "Custom" : "Built-in"}
                     </Badge>
-                    <Switch
+                    <VisibilityToggle
                       checked={isVisible}
                       onCheckedChange={() => toggleCategory(type, category.key)}
-                      aria-label={`Toggle ${category.label}`}
+                      label={`Show ${category.label} when adding a transaction`}
                     />
                     {isCustom && (
                       <div className="flex shrink-0 gap-1">

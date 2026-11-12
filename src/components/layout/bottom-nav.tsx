@@ -4,6 +4,7 @@ import { History, House, Settings, Tags, Target, type LucideIcon } from "lucide-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { GlowBorder } from "@/components/ui/glow-border";
 import { cn } from "@/lib/utils";
 
 interface Route {
@@ -46,12 +47,32 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main"
-      className="reveal-nav pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4"
+      // Tucked into the home-indicator area: the inset minus a little, but
+      // never closer than 0.5rem to the edge.
+      className="reveal-nav pointer-events-none fixed inset-x-0 bottom-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.75rem))] z-40 flex justify-center px-4"
     >
+      <div className="relative">
+      {/*
+        A very soft blue glow behind the pill, in the hero's blue. It is a
+        radial gradient rather than a blur filter, so it costs nothing on
+        mobile, and a sibling of the pill rather than its parent, so the
+        pill's backdrop blur still reaches the page (and diffuses the glow).
+      */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-x-10 -inset-y-6"
+        style={{
+          background:
+            "radial-gradient(50% 50% at 50% 55%, rgba(59,130,246,0.16) 0%, rgba(59,130,246,0.06) 45%, rgba(59,130,246,0) 75%)",
+        }}
+      />
       <ul
-        className="pointer-events-auto relative flex items-center rounded-full bg-[#1a1b20]/40 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(255,255,255,0.12)] ring-1 ring-white/12 backdrop-blur-xl backdrop-saturate-[1.8]"
+        className="pointer-events-auto relative flex items-center rounded-full bg-[#1a1b20]/40 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(169,196,255,0.2)] ring-1 ring-[#a9c4ff]/15 backdrop-blur-xl backdrop-saturate-[1.8]"
         style={{
           gap: GAP,
+          // A faint blue wash, brightest along the top edge.
+          backgroundImage:
+            "linear-gradient(180deg, rgba(75,122,214,0.16) 0%, rgba(75,122,214,0.04) 60%, rgba(75,122,214,0.02) 100%)",
           WebkitBackdropFilter: "blur(24px) saturate(1.8)",
           // Its own compositing layer, so iOS keeps the fixed bar pinned while
           // the page scrolls. It lives on the pill, not the <nav>: a transform
@@ -106,6 +127,9 @@ export function BottomNav() {
           );
         })}
       </ul>
+      {/* A slow light circling the pill's edge (a sibling, so the blur works). */}
+      <GlowBorder radius="rounded-full" />
+      </div>
     </nav>
   );
 }
