@@ -108,3 +108,87 @@ export function computeTargetProgress(spent: number, target: number) {
 export function computeTargetRemaining(spent: number, target: number) {
   return target - spent;
 }
+
+/* ------------------------------------------------------------------ */
+/* Pure list operations, shared by the browser-storage and the         */
+/* database-backed hooks so both produce identical results.            */
+/* ------------------------------------------------------------------ */
+
+export interface TargetInput {
+  categoryKey: string;
+  categoryLabel: string;
+  amount: number;
+  /** Replaces the saved monthly values when given; kept otherwise. */
+  overrides?: Record<string, number>;
+}
+
+/**
+ * Only well-formed "YYYY-MM" keys with a positive finite amount survive.
+ * Used on anything read back from storage or sent by the browser.
+ */
+export function cleanTargetOverrides(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  const overrides: Record<string, number> = {};
+  for (const [key, amount] of Object.entries(value as Record<string, unknown>)) {
+    if (!isMonthKey(key) || !isValidAmount(amount)) continue;
+    overrides[key] = amount;
+  }
+  return overrides;
+}
+
+/** Creates the target for a category, or replaces it while keeping createdAt. */
+export function applyUpsertTarget(
+  list: CategoryTarget[],
+  input: TargetInput,
+  now: number,
+): CategoryTarget[] {
+  const existing = list.find((t) => t.categoryKey === input.categoryKey);
+  const next: CategoryTarget = {
+    categoryKey: input.categoryKey,
+    categoryLabel: input.categoryLabel.trim(),
+    amount: input.amount,
+    overrides: input.overrides ?? existing?.overrides ?? {},
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+  return existing
+    ? list.map((t) => (t.categoryKey === input.categoryKey ? next : t))
+    : [...list, next];
+}
+
+export function applyRemoveTarget(list: CategoryTarget[], categoryKey: string) {
+  return list.filter((t) => t.categoryKey !== categoryKey);
+}
+
+/** Sets (or clears, with undefined) one month's value. */
+export function applyTargetOverride(
+  list: CategoryTarget[],
+  categoryKey: string,
+  month: string,
+  amount: number | undefined,
+  now: number,
+): CategoryTarget[] {
+  return list.map((target) => {
+    if (target.categoryKey !== categoryKey) return target;
+
+    const overrides = { ...target.overrides };
+    if (amount === undefined) delete overrides[month];
+    else overrides[month] = amount;
+
+    return { ...target, overrides, updatedAt: now };
+  });
+}
+
+export function applyTargetLabel(
+  list: CategoryTarget[],
+  categoryKey: string,
+  categoryLabel: string,
+  now: number,
+): CategoryTarget[] {
+  return list.map((target) =>
+    target.categoryKey === categoryKey
+      ? { ...target, categoryLabel: categoryLabel.trim(), updatedAt: now }
+      : target,
+  );
+}

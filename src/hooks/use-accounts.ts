@@ -23,7 +23,7 @@ import { createId } from "@/lib/id";
 const SEEDED_ACCOUNTS: Account[] = [DEFAULT_ACCOUNT];
 const EMPTY_TRANSFERS: Transfer[] = [];
 
-function parseLastAccount(raw: string): string | null {
+export function parseLastAccount(raw: string): string | null {
   try {
     const value = JSON.parse(raw);
     return typeof value === "string" ? value : null;

@@ -3,8 +3,9 @@
 import * as React from "react";
 
 import { useTransactions } from "@/components/dashboard/transactions-provider";
+import { useRemoteRecurringRules } from "@/hooks/use-remote-recurring";
 import {
-  useRecurringRules,
+  useLocalRecurringRules,
   type RecurringRuleInput,
 } from "@/hooks/use-recurring";
 import {
@@ -65,12 +66,15 @@ function useToday() {
   return now;
 }
 
+type RecurringRulesState = ReturnType<typeof useLocalRecurringRules>;
+
 /**
- * Single source of truth for recurring rules across routes, like the goals
- * provider. It must sit inside `TransactionsProvider`, since confirming an
- * occurrence writes a transaction.
+ * Everything above the raw rule store: today's due list, and confirming or
+ * skipping an occurrence. Shared by both stores, so the double-confirm guard
+ * and the ledger write behave the same either way. Returns the memoized
+ * context value.
  */
-export function RecurringProvider({ children }: { children: React.ReactNode }) {
+function useContextValue(state: RecurringRulesState): RecurringContextValue {
   const {
     rules,
     addRule,
@@ -79,14 +83,14 @@ export function RecurringProvider({ children }: { children: React.ReactNode }) {
     setPaused,
     markOccurrenceHandled,
     isLoaded,
-  } = useRecurringRules();
+  } = state;
   const { addTransactions } = useTransactions();
   const now = useToday();
 
   const due = React.useMemo(() => dueOccurrences(rules, now), [rules, now]);
 
-  // Storage writes are synchronous but the rendered `rules` lag a frame, so
-  // a fast double tap could otherwise confirm the same occurrence twice.
+  // Writes update the store synchronously but the rendered `rules` lag a
+  // frame, so a fast double tap could otherwise confirm the same occurrence twice.
   const rulesRef = React.useRef(rules);
   React.useEffect(() => {
     rulesRef.current = rules;
@@ -100,7 +104,7 @@ export function RecurringProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
     inFlight.current.add(token);
-    // Released once the storage write has rendered and isHandled takes over.
+    // Released once the write has rendered and isHandled takes over.
     window.setTimeout(() => inFlight.current.delete(token), 1000);
     return true;
   }, []);
@@ -162,8 +166,39 @@ export function RecurringProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
-  return (
-    <RecurringContext.Provider value={value}>{children}</RecurringContext.Provider>
+  return value;
+}
+
+function LocalRecurringProvider({ children }: { children: React.ReactNode }) {
+  const value = useContextValue(useLocalRecurringRules());
+  return <RecurringContext.Provider value={value}>{children}</RecurringContext.Provider>;
+}
+
+function RemoteRecurringProvider({ children }: { children: React.ReactNode }) {
+  const value = useContextValue(useRemoteRecurringRules());
+  return <RecurringContext.Provider value={value}>{children}</RecurringContext.Provider>;
+}
+
+/**
+ * Single source of truth for recurring rules across routes, like the goals
+ * provider. It must sit inside `TransactionsProvider`, since confirming an
+ * occurrence writes a transaction.
+ *
+ * `remote` is decided on the server: once Google sign-in and the database
+ * are configured, rules live in Neon (and sync across devices); otherwise
+ * they stay in this browser's localStorage. Both expose the same API.
+ */
+export function RecurringProvider({
+  remote = false,
+  children,
+}: {
+  remote?: boolean;
+  children: React.ReactNode;
+}) {
+  return remote ? (
+    <RemoteRecurringProvider>{children}</RemoteRecurringProvider>
+  ) : (
+    <LocalRecurringProvider>{children}</LocalRecurringProvider>
   );
 }
 

@@ -4,10 +4,11 @@ import * as React from "react";
 
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import {
-  useAccounts as useAccountsState,
+  useAccounts as useLocalAccounts,
   type AccountInput,
   type TransferInput,
 } from "@/hooks/use-accounts";
+import { useRemoteAccounts } from "@/hooks/use-remote-accounts";
 import {
   computeAccountBalances,
   DEFAULT_ACCOUNT_ID,
@@ -42,11 +43,45 @@ interface AccountsContextValue {
 
 const AccountsContext = React.createContext<AccountsContextValue | null>(null);
 
+type AccountsState = ReturnType<typeof useLocalAccounts>;
+
 /**
  * Accounts, transfers and per-account balances for every route. It sits
  * inside TransactionsProvider because balances are derived from the ledger.
+ *
+ * `remote` is decided on the server, like for transactions: once sign-in is
+ * configured, accounts and transfers live in Neon; otherwise in this
+ * browser. Both stores expose the same API.
  */
-export function AccountsProvider({ children }: { children: React.ReactNode }) {
+export function AccountsProvider({
+  remote = false,
+  children,
+}: {
+  remote?: boolean;
+  children: React.ReactNode;
+}) {
+  return remote ? (
+    <RemoteAccounts>{children}</RemoteAccounts>
+  ) : (
+    <LocalAccounts>{children}</LocalAccounts>
+  );
+}
+
+function LocalAccounts({ children }: { children: React.ReactNode }) {
+  return <AccountsContextProvider state={useLocalAccounts()}>{children}</AccountsContextProvider>;
+}
+
+function RemoteAccounts({ children }: { children: React.ReactNode }) {
+  return <AccountsContextProvider state={useRemoteAccounts()}>{children}</AccountsContextProvider>;
+}
+
+function AccountsContextProvider({
+  state,
+  children,
+}: {
+  state: AccountsState;
+  children: React.ReactNode;
+}) {
   const { transactions, reassignTransactionAccount } = useTransactions();
   const {
     accounts,
@@ -58,7 +93,7 @@ export function AccountsProvider({ children }: { children: React.ReactNode }) {
     removeAccountRecord,
     addTransfer,
     removeTransfer,
-  } = useAccountsState();
+  } = state;
 
   const balances = React.useMemo(
     () => computeAccountBalances(accounts, transactions, transfers),

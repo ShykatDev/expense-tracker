@@ -2,32 +2,29 @@
 
 import * as React from "react";
 
-import { useTargets as useTargetsState } from "@/hooks/use-targets";
-import type { CategoryTarget } from "@/lib/targets";
+import { useRemoteTargets } from "@/hooks/use-remote-targets";
+import { useLocalTargets } from "@/hooks/use-targets";
+import type { CategoryTarget, TargetInput } from "@/lib/targets";
 
 interface TargetsContextValue {
   targets: CategoryTarget[];
-  upsertTarget: ReturnType<typeof useTargetsState>["upsertTarget"];
-  removeTarget: ReturnType<typeof useTargetsState>["removeTarget"];
-  setTargetOverride: ReturnType<typeof useTargetsState>["setTargetOverride"];
-  renameTargetLabel: ReturnType<typeof useTargetsState>["renameTargetLabel"];
+  upsertTarget: (input: TargetInput) => void;
+  removeTarget: (categoryKey: string) => void;
+  setTargetOverride: (
+    categoryKey: string,
+    month: string,
+    amount: number | undefined,
+  ) => void;
+  renameTargetLabel: (categoryKey: string, categoryLabel: string) => void;
   isLoaded: boolean;
 }
 
 const TargetsContext = React.createContext<TargetsContextValue | null>(null);
 
-/**
- * Single source of truth for category targets across routes. The underlying
- * hook is localStorage backed, so two independent instances would drift
- * apart: a target set on /categories would not show up on the dashboard.
- * This provider lives in the root layout, which is preserved across client
- * side navigation, so both routes share one instance.
- */
-export function TargetsProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+type TargetsState = ReturnType<typeof useLocalTargets>;
+
+/** Memoized context value, so consumers only re-render when data changes. */
+function useContextValue(state: TargetsState): TargetsContextValue {
   const {
     targets,
     upsertTarget,
@@ -35,9 +32,8 @@ export function TargetsProvider({
     setTargetOverride,
     renameTargetLabel,
     isLoaded,
-  } = useTargetsState();
-
-  const value = React.useMemo(
+  } = state;
+  return React.useMemo(
     () => ({
       targets,
       upsertTarget,
@@ -55,9 +51,37 @@ export function TargetsProvider({
       isLoaded,
     ],
   );
+}
 
-  return (
-    <TargetsContext.Provider value={value}>{children}</TargetsContext.Provider>
+function LocalTargetsProvider({ children }: { children: React.ReactNode }) {
+  const value = useContextValue(useLocalTargets());
+  return <TargetsContext.Provider value={value}>{children}</TargetsContext.Provider>;
+}
+
+function RemoteTargetsProvider({ children }: { children: React.ReactNode }) {
+  const value = useContextValue(useRemoteTargets());
+  return <TargetsContext.Provider value={value}>{children}</TargetsContext.Provider>;
+}
+
+/**
+ * Single source of truth for category targets across routes, hosted in the
+ * root layout so /categories and the dashboard share one instance.
+ *
+ * `remote` is decided on the server: once Google sign-in and the database
+ * are configured, targets live in Neon (and sync across devices); otherwise
+ * they stay in this browser's localStorage. Both expose the same API.
+ */
+export function TargetsProvider({
+  remote = false,
+  children,
+}: {
+  remote?: boolean;
+  children: React.ReactNode;
+}) {
+  return remote ? (
+    <RemoteTargetsProvider>{children}</RemoteTargetsProvider>
+  ) : (
+    <LocalTargetsProvider>{children}</LocalTargetsProvider>
   );
 }
 

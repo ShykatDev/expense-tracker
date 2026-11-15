@@ -3,27 +3,21 @@
 import * as React from "react"
 
 import { useLocalStorageJson } from "@/hooks/use-local-storage"
-import { isMonthKey, type CategoryTarget } from "@/lib/targets"
+import {
+  applyRemoveTarget,
+  applyTargetLabel,
+  applyTargetOverride,
+  applyUpsertTarget,
+  cleanTargetOverrides,
+  type CategoryTarget,
+  type TargetInput,
+} from "@/lib/targets"
 import { TARGETS_STORAGE_KEY } from "@/lib/transactions"
 
 /**
  * localStorage is user editable and survives app upgrades, so anything read
  * back has to be validated before it reaches the rest of the app.
  */
-function sanitizeOverrides(value: unknown): Record<string, number> {
-  if (!value || typeof value !== "object") return {}
-
-  const overrides: Record<string, number> = {}
-  for (const [key, amount] of Object.entries(value as Record<string, unknown>)) {
-    if (!isMonthKey(key)) continue
-    if (typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
-      continue
-    }
-    overrides[key] = amount
-  }
-  return overrides
-}
-
 function sanitizeTargets(parsed: unknown): CategoryTarget[] {
   if (!Array.isArray(parsed)) return []
 
@@ -54,7 +48,7 @@ function sanitizeTargets(parsed: unknown): CategoryTarget[] {
       categoryKey: target.categoryKey,
       categoryLabel: target.categoryLabel.trim(),
       amount: target.amount,
-      overrides: sanitizeOverrides(target.overrides),
+      overrides: cleanTargetOverrides(target.overrides),
       createdAt: typeof target.createdAt === "number" ? target.createdAt : now,
       updatedAt: typeof target.updatedAt === "number" ? target.updatedAt : now,
     })
@@ -73,7 +67,8 @@ function parseTargets(raw: string) {
 
 const EMPTY_TARGETS: CategoryTarget[] = []
 
-export function useTargets() {
+/** Targets kept in this browser's localStorage (used when sign-in is off). */
+export function useLocalTargets() {
   const [targets, setTargets] = useLocalStorageJson<CategoryTarget[]>(
     TARGETS_STORAGE_KEY,
     parseTargets,
@@ -81,39 +76,16 @@ export function useTargets() {
   )
 
   const upsertTarget = React.useCallback(
-    ({
-      categoryKey,
-      categoryLabel,
-      amount,
-      overrides,
-    }: {
-      categoryKey: string
-      categoryLabel: string
-      amount: number
-      overrides?: Record<string, number>
-    }) => {
+    (input: TargetInput) => {
       const now = Date.now()
-      setTargets((prev) => {
-        const existing = prev.find((t) => t.categoryKey === categoryKey)
-        const next: CategoryTarget = {
-          categoryKey,
-          categoryLabel: categoryLabel.trim(),
-          amount,
-          overrides: overrides ?? existing?.overrides ?? {},
-          createdAt: existing?.createdAt ?? now,
-          updatedAt: now,
-        }
-        return existing
-          ? prev.map((t) => (t.categoryKey === categoryKey ? next : t))
-          : [...prev, next]
-      })
+      setTargets((prev) => applyUpsertTarget(prev, input, now))
     },
     [setTargets],
   )
 
   const removeTarget = React.useCallback(
     (categoryKey: string) => {
-      setTargets((prev) => prev.filter((t) => t.categoryKey !== categoryKey))
+      setTargets((prev) => applyRemoveTarget(prev, categoryKey))
     },
     [setTargets],
   )
@@ -121,15 +93,7 @@ export function useTargets() {
   const setTargetOverride = React.useCallback(
     (categoryKey: string, month: string, amount: number | undefined) => {
       setTargets((prev) =>
-        prev.map((target) => {
-          if (target.categoryKey !== categoryKey) return target
-
-          const overrides = { ...target.overrides }
-          if (amount === undefined) delete overrides[month]
-          else overrides[month] = amount
-
-          return { ...target, overrides, updatedAt: Date.now() }
-        }),
+        applyTargetOverride(prev, categoryKey, month, amount, Date.now()),
       )
     },
     [setTargets],
@@ -142,15 +106,7 @@ export function useTargets() {
   const renameTargetLabel = React.useCallback(
     (categoryKey: string, categoryLabel: string) => {
       setTargets((prev) =>
-        prev.map((target) =>
-          target.categoryKey === categoryKey
-            ? {
-                ...target,
-                categoryLabel: categoryLabel.trim(),
-                updatedAt: Date.now(),
-              }
-            : target,
-        ),
+        applyTargetLabel(prev, categoryKey, categoryLabel, Date.now()),
       )
     },
     [setTargets],

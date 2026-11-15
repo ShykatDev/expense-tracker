@@ -369,3 +369,75 @@ export function sanitizeRules(parsed: unknown): RecurringRule[] {
   }
   return rules;
 }
+
+/* ------------------------------------------------------------------ */
+/* Rule edits, shared by the browser-storage hook and the Neon one so  */
+/* both produce identical rules. They run on the client because period */
+/* keys and "today" depend on the user's local time zone; the server   */
+/* only validates the result (see src/server/recurring.ts).            */
+/* ------------------------------------------------------------------ */
+
+/** The fields the rule dialog edits. */
+export interface RecurringRuleInput {
+  type: TransactionType;
+  category: string;
+  amount: number;
+  frequency: RecurringFrequency;
+  dayOfMonth: number;
+  startDate: number;
+  note?: string;
+}
+
+function normalizeRuleInput(input: RecurringRuleInput) {
+  return {
+    type: input.type,
+    category: input.category.trim(),
+    amount: input.amount,
+    frequency: input.frequency,
+    dayOfMonth: clampDayOfMonth(input.dayOfMonth),
+    startDate: startOfDay(input.startDate),
+    note: input.note?.trim() || undefined,
+  };
+}
+
+/** A new, active rule with a client-made id, so callers can use it at once. */
+export function createRule(input: RecurringRuleInput, id: string, now = Date.now()): RecurringRule {
+  return {
+    id,
+    ...normalizeRuleInput(input),
+    paused: false,
+    handled: [],
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/** The rule after the dialog's edits are applied. */
+export function applyRuleInput(
+  rule: RecurringRule,
+  input: RecurringRuleInput,
+  now = Date.now(),
+): RecurringRule {
+  const next: RecurringRule = { ...rule, ...normalizeRuleInput(input), updatedAt: now };
+  // Period keys differ between frequencies, so the old handled record is
+  // meaningless; don't resurface the past either.
+  if (next.frequency !== rule.frequency) {
+    return settleBefore({ ...next, settledThrough: undefined, handled: [] }, now);
+  }
+  return next;
+}
+
+/**
+ * Pausing hides the rule's occurrences. Resuming settles everything dated
+ * before today, so a long pause doesn't come back as a pile of overdue bills.
+ */
+export function applyPaused(rule: RecurringRule, paused: boolean, now = Date.now()): RecurringRule {
+  if (rule.paused === paused) return rule;
+  const next = { ...rule, paused, updatedAt: now };
+  return paused ? next : settleBefore(next, now);
+}
+
+/** "2026", "2026-11" or "W2026-11-09": the shapes `periodKey` produces. */
+export function isPeriodKey(value: unknown): value is string {
+  return typeof value === "string" && /^(\d{4}|\d{4}-\d{2}|W\d{4}-\d{2}-\d{2})$/.test(value);
+}

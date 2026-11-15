@@ -2,17 +2,20 @@
 
 import * as React from "react";
 
-import { useGoals as useGoalsState } from "@/hooks/use-goals";
+import { useLocalGoals } from "@/hooks/use-goals";
+import { useRemoteGoals } from "@/hooks/use-remote-goals";
+
+type GoalsState = ReturnType<typeof useLocalGoals>;
 
 interface GoalsContextValue {
-  goals: ReturnType<typeof useGoalsState>["goals"];
-  completions: ReturnType<typeof useGoalsState>["completions"];
-  addGoal: ReturnType<typeof useGoalsState>["addGoal"];
-  updateGoal: ReturnType<typeof useGoalsState>["updateGoal"];
-  reorderGoals: ReturnType<typeof useGoalsState>["reorderGoals"];
-  removeGoal: ReturnType<typeof useGoalsState>["removeGoal"];
-  completeGoal: ReturnType<typeof useGoalsState>["completeGoal"];
-  reopenGoal: ReturnType<typeof useGoalsState>["reopenGoal"];
+  goals: GoalsState["goals"];
+  completions: GoalsState["completions"];
+  addGoal: GoalsState["addGoal"];
+  updateGoal: GoalsState["updateGoal"];
+  reorderGoals: GoalsState["reorderGoals"];
+  removeGoal: GoalsState["removeGoal"];
+  completeGoal: GoalsState["completeGoal"];
+  reopenGoal: GoalsState["reopenGoal"];
   isLoaded: boolean;
 }
 
@@ -40,12 +43,8 @@ function dropObsoleteStorage() {
   }
 }
 
-/**
- * Single source of truth for goals across routes. Like the categories
- * provider, it lives in the root layout so the goals page and the dashboard
- * read the same instance.
- */
-export function GoalsProvider({ children }: { children: React.ReactNode }) {
+/** Memoized context value, so consumers only re-render when data changes. */
+function useContextValue(state: GoalsState): GoalsContextValue {
   const {
     goals,
     completions,
@@ -56,13 +55,8 @@ export function GoalsProvider({ children }: { children: React.ReactNode }) {
     completeGoal,
     reopenGoal,
     isLoaded,
-  } = useGoalsState();
-
-  React.useEffect(() => {
-    dropObsoleteStorage();
-  }, []);
-
-  const value = React.useMemo(
+  } = state;
+  return React.useMemo(
     () => ({
       goals,
       completions,
@@ -86,9 +80,43 @@ export function GoalsProvider({ children }: { children: React.ReactNode }) {
       isLoaded,
     ],
   );
+}
 
-  return (
-    <GoalsContext.Provider value={value}>{children}</GoalsContext.Provider>
+function LocalGoalsProvider({ children }: { children: React.ReactNode }) {
+  const value = useContextValue(useLocalGoals());
+  return <GoalsContext.Provider value={value}>{children}</GoalsContext.Provider>;
+}
+
+function RemoteGoalsProvider({ children }: { children: React.ReactNode }) {
+  const value: GoalsContextValue = useContextValue(useRemoteGoals());
+  return <GoalsContext.Provider value={value}>{children}</GoalsContext.Provider>;
+}
+
+/**
+ * Single source of truth for goals across routes. Like the categories
+ * provider, it lives in the root layout so the goals page and the dashboard
+ * read the same instance.
+ *
+ * `remote` is decided on the server: once Google sign-in and the database
+ * are configured, goals live in Neon (and sync across devices); otherwise
+ * they stay in this browser's localStorage. Both expose the same API, so no
+ * screen knows which one it's talking to.
+ */
+export function GoalsProvider({
+  remote = false,
+  children,
+}: {
+  remote?: boolean;
+  children: React.ReactNode;
+}) {
+  React.useEffect(() => {
+    dropObsoleteStorage();
+  }, []);
+
+  return remote ? (
+    <RemoteGoalsProvider>{children}</RemoteGoalsProvider>
+  ) : (
+    <LocalGoalsProvider>{children}</LocalGoalsProvider>
   );
 }
 

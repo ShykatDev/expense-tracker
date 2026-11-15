@@ -7,6 +7,8 @@ import { RecurringProvider } from "@/components/recurring/recurring-provider";
 import { TargetsProvider } from "@/components/targets/targets-provider";
 import { AppToaster } from "@/components/brand/app-toaster";
 import { InstallPromptCapture } from "@/lib/install-prompt";
+import { QueryProvider } from "@/components/providers/query-provider";
+import { isAuthConfigured } from "@/lib/auth";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
@@ -77,18 +79,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="absolute top-1/3 -right-32 size-112 rounded-full bg-white/5 blur-2xl" />
           <div className="absolute bottom-0 left-1/4 size-80 rounded-full bg-white/6 blur-2xl" />
         </div>
-        <CategoriesProvider>
-          <TransactionsProvider>
+        <QueryProvider>
+        <CategoriesProvider remote={isAuthConfigured()}>
+          {/* Data lives in Neon once Google sign-in is configured. */}
+          <TransactionsProvider remote={isAuthConfigured()}>
             <SplashScreen />
-            <AccountsProvider>
-              <TargetsProvider>
-                <GoalsProvider>
-                  <RecurringProvider>{children}</RecurringProvider>
+            <AccountsProvider remote={isAuthConfigured()}>
+              <TargetsProvider remote={isAuthConfigured()}>
+                <GoalsProvider remote={isAuthConfigured()}>
+                  <RecurringProvider remote={isAuthConfigured()}>{children}</RecurringProvider>
                 </GoalsProvider>
               </TargetsProvider>
             </AccountsProvider>
           </TransactionsProvider>
         </CategoriesProvider>
+        </QueryProvider>
         <AppToaster />
         <InstallPromptCapture />
       </body>

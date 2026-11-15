@@ -3,27 +3,37 @@
 import * as React from "react"
 
 import {
+  EMPTY_HIDDEN_CATEGORIES,
+  isCategoryHidden,
+  sanitizeHiddenCategories,
+  setCategoryHidden,
+  type HiddenCategories,
+} from "@/lib/categories-ops"
+import {
   CATEGORY_VISIBILITY_STORAGE_KEY,
   type TransactionType,
 } from "@/lib/transactions"
 
-export type HiddenCategories = Record<TransactionType, string[]>
+export type { HiddenCategories }
 
-const EMPTY: HiddenCategories = { income: [], expense: [] }
+/** Reads this browser's hidden categories, validated. Empty when unreadable. */
+export function readLocalHiddenCategories(): HiddenCategories {
+  try {
+    const raw = window.localStorage.getItem(CATEGORY_VISIBILITY_STORAGE_KEY)
+    return raw ? sanitizeHiddenCategories(JSON.parse(raw)) : EMPTY_HIDDEN_CATEGORIES
+  } catch {
+    return EMPTY_HIDDEN_CATEGORIES
+  }
+}
 
-export function useCategoryVisibility() {
-  const [hidden, setHidden] = React.useState<HiddenCategories>(EMPTY)
+/** Which categories are hidden from the entry screen, in this browser. */
+export function useLocalCategoryVisibility() {
+  const [hidden, setHidden] = React.useState<HiddenCategories>(EMPTY_HIDDEN_CATEGORIES)
   const [isLoaded, setIsLoaded] = React.useState(false)
 
   React.useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(CATEGORY_VISIBILITY_STORAGE_KEY)
-      if (raw) setHidden({ ...EMPTY, ...JSON.parse(raw) })
-    } catch {
-      // ignore malformed storage
-    } finally {
-      setIsLoaded(true)
-    }
+    setHidden(readLocalHiddenCategories())
+    setIsLoaded(true)
   }, [])
 
   React.useEffect(() => {
@@ -36,12 +46,9 @@ export function useCategoryVisibility() {
 
   const toggleCategory = React.useCallback(
     (type: TransactionType, key: string) => {
-      setHidden((prev) => {
-        const set = new Set(prev[type])
-        if (set.has(key)) set.delete(key)
-        else set.add(key)
-        return { ...prev, [type]: Array.from(set) }
-      })
+      setHidden((prev) =>
+        setCategoryHidden(prev, type, key, !isCategoryHidden(prev, type, key)),
+      )
     },
     [],
   )

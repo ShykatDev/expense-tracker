@@ -34,8 +34,9 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except auth endpoints, Next internals, the manifest, app
-    // icons and any file with an extension (logos, favicon, …).
-    "/((?!api/auth|_next/static|_next/image|manifest.webmanifest|icons/|apple-icon|.*\\.[a-zA-Z0-9]+$).*)",
+    // Everything except API routes (auth endpoints, and data routes that
+    // check the session themselves and answer 401), Next internals, the
+    // manifest, app icons and any file with an extension (logos, favicon, …).
+    "/((?!api/|_next/static|_next/image|manifest.webmanifest|icons/|apple-icon|.*\\.[a-zA-Z0-9]+$).*)",
   ],
 };

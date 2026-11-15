@@ -212,6 +212,11 @@ export const goals = pgTable(
     links: jsonb().$type<string[]>(),
     /** Where the photo lives once photos move to blob storage. */
     imageUrl: text(),
+    /**
+     * The photo's id in the browser's IndexedDB (see lib/goal-images), until
+     * photos move to blob storage. Only resolves on the device that added it.
+     */
+    imageId: text(),
     /** Lower is higher priority. */
     order: integer(),
     priceHistory: jsonb().$type<{ amount: number; changedAt: number }[]>(),

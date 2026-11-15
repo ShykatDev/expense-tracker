@@ -91,11 +91,11 @@ npm run lint
 
 To use it as an app, open it on your phone and choose **Add to Home Screen**.
 
-## Sign-in and database (in progress)
+## Sign-in and database
 
 The app is moving from browser storage to **Neon Postgres** (via **Drizzle**), with **Google sign-in** through **Better Auth**. Server code runs as Vercel Functions in the same deployment; there's no separate backend to host.
 
-Step 1 is in place: the schema, migrations, Google sign-in, a `/sign-in` page and a sign-in gate. The screens still read and write browser storage until the next steps move each data type to the database. Until the variables below are set, the gate stays open and the app works as before.
+When you're signed in, **all your data is stored in Neon and syncs across devices**: transactions, accounts and transfers, categories, monthly targets, goals and goal completions, and recurring rules. Anything saved in a browser before signing in is uploaded once, automatically. Goal photos still stay on the device until they move to Vercel Blob. Until the variables below are set, the gate stays open and everything stays in the browser as before.
 
 **Setup**
 1. **Neon:** in Vercel, open your project → **Storage** → **Create** → **Neon**. This sets `DATABASE_URL` in Vercel.

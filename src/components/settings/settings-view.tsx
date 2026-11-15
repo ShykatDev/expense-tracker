@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
+import { toast } from "@yusufceng1z/ding-react";
 
 import { AccountsSection } from "@/components/accounts/accounts-section";
 import { AccountCard } from "@/components/auth/account-card";
@@ -43,6 +44,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { deleteAllAccountsAction } from "@/app/actions/accounts";
+import { deleteAllCategoriesAction } from "@/app/actions/categories";
+import { deleteAllGoalsAction } from "@/app/actions/goals";
+import { deleteAllRecurringAction } from "@/app/actions/recurring";
+import { deleteAllTargetsAction } from "@/app/actions/targets";
+import { deleteAllTransactionsAction } from "@/app/actions/transactions";
 import { clearGoalImages } from "@/lib/goal-images";
 import { cn } from "@/lib/utils";
 
@@ -94,8 +101,30 @@ export function SettingsView({ authEnabled = false }: { authEnabled?: boolean })
     window.location.replace("/");
   }
 
-  function handleReset() {
+  const [resetting, setResetting] = React.useState(false);
+
+  async function handleReset() {
     if (confirmText.trim().toUpperCase() !== CONFIRM_WORD) return;
+    setResetting(true);
+    // Synced data lives on the server: clear it there first, and stop if that
+    // fails so the local copy isn't wiped while the account still has data.
+    if (authEnabled) {
+      try {
+        // Goals before anything else they might reference; the rest in parallel.
+        await deleteAllGoalsAction();
+        await Promise.all([
+          deleteAllTransactionsAction(),
+          deleteAllAccountsAction(),
+          deleteAllCategoriesAction(),
+          deleteAllTargetsAction(),
+          deleteAllRecurringAction(),
+        ]);
+      } catch {
+        toast.error("Couldn’t reach the server, so nothing was deleted. Try again.");
+        setResetting(false);
+        return;
+      }
+    }
     clearAllData();
     // Every provider holds its data in memory and only writes on change, so a
     // full reload is what guarantees nothing old is written back. Goal photos
@@ -131,7 +160,11 @@ export function SettingsView({ authEnabled = false }: { authEnabled?: boolean })
             {authEnabled && <AccountCard />}
             <SheetSection
               title="Your data"
-              subtitle="Everything is kept in this browser only — nothing is uploaded"
+              subtitle={
+                authEnabled
+                  ? "Synced to your Google account. Goal photos stay on this device for now."
+                  : "Everything is kept in this browser only — nothing is uploaded"
+              }
             >
               <Card className="gap-0 py-1">
                 {rows.map((row, index) => (
@@ -276,10 +309,10 @@ export function SettingsView({ authEnabled = false }: { authEnabled?: boolean })
               variant="destructive"
               size="lg"
               onClick={handleReset}
-              disabled={confirmText.trim().toUpperCase() !== CONFIRM_WORD}
+              disabled={resetting || confirmText.trim().toUpperCase() !== CONFIRM_WORD}
             >
               <Trash2 />
-              Delete everything
+              {resetting ? "Deleting…" : "Delete everything"}
             </Button>
             <DialogClose render={<Button variant="outline" size="lg" />}>
               Cancel

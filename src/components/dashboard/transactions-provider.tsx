@@ -2,7 +2,8 @@
 
 import * as React from "react";
 
-import { useTransactions as useTransactionsState } from "@/hooks/use-transactions";
+import { useRemoteTransactions } from "@/hooks/use-remote-transactions";
+import { useLocalTransactions } from "@/hooks/use-transactions";
 import type {
   NewTransaction,
   Transaction,
@@ -33,17 +34,10 @@ const TransactionsContext = React.createContext<TransactionsContextValue | null>
   null,
 );
 
-/**
- * `useTransactions` keeps its state in the hook instance, so two independent
- * instances drift apart: the shared bottom bar would write to localStorage
- * without the dashboard's list ever seeing the change. Hosting the hook once
- * in the root layout gives every route the same instance.
- */
-export function TransactionsProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+type TransactionsState = ReturnType<typeof useLocalTransactions>;
+
+/** Memoized context value, so consumers only re-render when data changes. */
+function useContextValue(state: TransactionsState): TransactionsContextValue {
   const {
     transactions,
     addTransactions,
@@ -52,10 +46,8 @@ export function TransactionsProvider({
     renameCategory,
     reassignAccount,
     isLoaded,
-  } =
-    useTransactionsState();
-
-  const value = React.useMemo(
+  } = state;
+  return React.useMemo(
     () => ({
       transactions,
       addTransactions,
@@ -75,11 +67,37 @@ export function TransactionsProvider({
       isLoaded,
     ],
   );
+}
 
-  return (
-    <TransactionsContext.Provider value={value}>
-      {children}
-    </TransactionsContext.Provider>
+function LocalTransactionsProvider({ children }: { children: React.ReactNode }) {
+  const value = useContextValue(useLocalTransactions());
+  return <TransactionsContext.Provider value={value}>{children}</TransactionsContext.Provider>;
+}
+
+function RemoteTransactionsProvider({ children }: { children: React.ReactNode }) {
+  const value = useContextValue(useRemoteTransactions());
+  return <TransactionsContext.Provider value={value}>{children}</TransactionsContext.Provider>;
+}
+
+/**
+ * The one transactions store for every route, hosted in the root layout.
+ *
+ * `remote` is decided on the server: once Google sign-in and the database
+ * are configured, transactions live in Neon (and sync across devices);
+ * otherwise they stay in this browser's localStorage. Both expose the same
+ * API, so no screen knows which one it's talking to.
+ */
+export function TransactionsProvider({
+  remote = false,
+  children,
+}: {
+  remote?: boolean;
+  children: React.ReactNode;
+}) {
+  return remote ? (
+    <RemoteTransactionsProvider>{children}</RemoteTransactionsProvider>
+  ) : (
+    <LocalTransactionsProvider>{children}</LocalTransactionsProvider>
   );
 }
 

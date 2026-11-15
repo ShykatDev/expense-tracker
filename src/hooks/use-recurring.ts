@@ -6,26 +6,17 @@ import { useLocalStorageJson } from "@/hooks/use-local-storage";
 import { createId } from "@/lib/id";
 import {
   RECURRING_STORAGE_KEY,
-  clampDayOfMonth,
+  applyPaused,
+  applyRuleInput,
+  createRule,
   markHandled,
   sanitizeRules,
-  settleBefore,
-  startOfDay,
-  type RecurringFrequency,
   type RecurringRule,
+  type RecurringRuleInput,
 } from "@/lib/recurring";
-import type { TransactionType } from "@/lib/transactions";
 
-/** The fields the rule dialog edits. */
-export interface RecurringRuleInput {
-  type: TransactionType;
-  category: string;
-  amount: number;
-  frequency: RecurringFrequency;
-  dayOfMonth: number;
-  startDate: number;
-  note?: string;
-}
+/** The fields the rule dialog edits. Lives in lib so both stores share it. */
+export type { RecurringRuleInput };
 
 function parseRules(raw: string) {
   try {
@@ -37,24 +28,15 @@ function parseRules(raw: string) {
 
 const EMPTY_RULES: RecurringRule[] = [];
 
-function normalizeInput(input: RecurringRuleInput) {
-  return {
-    type: input.type,
-    category: input.category.trim(),
-    amount: input.amount,
-    frequency: input.frequency,
-    dayOfMonth: clampDayOfMonth(input.dayOfMonth),
-    startDate: startOfDay(input.startDate),
-    note: input.note?.trim() || undefined,
-  };
-}
-
 /**
- * The recurring rules, persisted to localStorage. Only bookkeeping lives
- * here; writing a confirmed occurrence to the ledger is the provider's job,
- * since it needs the transactions context.
+ * The recurring rules, persisted to localStorage. Used only while Google
+ * sign-in isn't configured; once it is, `useRemoteRecurringRules` (Neon)
+ * takes over with the same API.
+ *
+ * Only bookkeeping lives here; writing a confirmed occurrence to the ledger
+ * is the provider's job, since it needs the transactions context.
  */
-export function useRecurringRules() {
+export function useLocalRecurringRules() {
   const [rules, setRules] = useLocalStorageJson<RecurringRule[]>(
     RECURRING_STORAGE_KEY,
     parseRules,
@@ -63,15 +45,7 @@ export function useRecurringRules() {
 
   const addRule = React.useCallback(
     (input: RecurringRuleInput) => {
-      const now = Date.now();
-      const rule: RecurringRule = {
-        id: createId(),
-        ...normalizeInput(input),
-        paused: false,
-        handled: [],
-        createdAt: now,
-        updatedAt: now,
-      };
+      const rule = createRule(input, createId());
       setRules((prev) => [rule, ...prev]);
       return rule;
     },
@@ -80,25 +54,7 @@ export function useRecurringRules() {
 
   const updateRule = React.useCallback(
     (id: string, input: RecurringRuleInput) => {
-      setRules((prev) =>
-        prev.map((rule) => {
-          if (rule.id !== id) return rule;
-          let next: RecurringRule = {
-            ...rule,
-            ...normalizeInput(input),
-            updatedAt: Date.now(),
-          };
-          // Period keys differ between frequencies, so the old handled
-          // record is meaningless; don't resurface the past either.
-          if (next.frequency !== rule.frequency) {
-            next = settleBefore(
-              { ...next, settledThrough: undefined, handled: [] },
-              Date.now(),
-            );
-          }
-          return next;
-        }),
-      );
+      setRules((prev) => prev.map((rule) => (rule.id === id ? applyRuleInput(rule, input) : rule)));
     },
     [setRules],
   );
@@ -110,19 +66,10 @@ export function useRecurringRules() {
     [setRules],
   );
 
-  /**
-   * Pausing hides the rule's occurrences. Resuming settles everything dated
-   * before today, so a long pause doesn't come back as a pile of overdue bills.
-   */
+  /** See `applyPaused`: resuming settles everything before today. */
   const setPaused = React.useCallback(
     (id: string, paused: boolean) => {
-      setRules((prev) =>
-        prev.map((rule) => {
-          if (rule.id !== id || rule.paused === paused) return rule;
-          const next = { ...rule, paused, updatedAt: Date.now() };
-          return paused ? next : settleBefore(next, Date.now());
-        }),
-      );
+      setRules((prev) => prev.map((rule) => (rule.id === id ? applyPaused(rule, paused) : rule)));
     },
     [setRules],
   );
