@@ -2,7 +2,8 @@
 
 import { History, House, Settings, Tags, Target, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import * as React from "react";
 
 import { GlowBorder } from "@/components/ui/glow-border";
 import { cn } from "@/lib/utils";
@@ -26,8 +27,12 @@ function isActiveRoute(href: string, pathname: string | null) {
   return href === "/" ? pathname === "/" : Boolean(pathname?.startsWith(href));
 }
 
-/** Tab size and gap, in px. The indicator's position is computed from these. */
-const SLOT = 44;
+/**
+ * Tab size and gap, in px. The indicator's position is computed from these.
+ * 48px tabs meet the usual minimum touch target; each tab's hit area also
+ * reaches a little past it (see the Link's ::after) so near-misses count.
+ */
+const SLOT = 48;
 const GAP = 4;
 
 /**
@@ -38,18 +43,34 @@ const GAP = 4;
  * one on navigation with a springy overshoot, squishing as it travels, and
  * the newly active icon pops. Every slot is the same width, so the glide is
  * a plain translate.
-
+ *
+ * It can also be swiped: press anywhere on the pill and slide sideways, the
+ * highlight follows the finger, and letting go opens the tab under it. A
+ * plain tap still just follows the link.
  */
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const currentIndex = ROUTES.findIndex((route) => isActiveRoute(route.href, pathname));
+  const {
+    listRef,
+    handlers: scrubHandlers,
+    offset: scrubOffset,
+    index: scrubIndex,
+    onLinkClick,
+  } = useNavScrub({
+    currentIndex,
+    onSelect: (index) => router.push(ROUTES[index].href),
+  });
+  // While swiping, or until the tapped-to route loads, show that tab as active.
+  const shownIndex = scrubIndex ?? currentIndex;
 
   return (
     <nav
       aria-label="Main"
-      // Tucked into the home-indicator area: the inset minus a little, but
-      // never closer than 0.5rem to the edge.
-      className="reveal-nav pointer-events-none fixed inset-x-0 bottom-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.75rem))] z-40 flex justify-center px-4"
+      // Just above the home-indicator area: the inset minus a little, but
+      // never closer than 1rem to the edge.
+      className="reveal-nav pointer-events-none fixed inset-x-0 bottom-[max(1rem,calc(env(safe-area-inset-bottom)-0.25rem))] z-40 flex justify-center px-4"
     >
       <div className="relative">
       {/*
@@ -67,7 +88,11 @@ export function BottomNav() {
         }}
       />
       <ul
-        className="pointer-events-auto relative flex items-center rounded-full bg-[#1a1b20]/40 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(169,196,255,0.2)] ring-1 ring-[#a9c4ff]/15 backdrop-blur-xl backdrop-saturate-[1.8]"
+        ref={listRef}
+        {...scrubHandlers}
+        // touch-none: a sideways swipe drives the highlight instead of
+        // scrolling or triggering the browser's back gesture.
+        className="pointer-events-auto relative flex touch-none items-center select-none rounded-full bg-[#1a1b20]/40 p-1.5 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_0_rgba(169,196,255,0.2)] ring-1 ring-[#a9c4ff]/15 backdrop-blur-xl backdrop-saturate-[1.8]"
         style={{
           gap: GAP,
           // A faint blue wash, brightest along the top edge.
@@ -82,36 +107,46 @@ export function BottomNav() {
       >
         {/* The gliding highlight: it springs past its target and settles
             back, while the inner blob squishes as it travels. */}
-        {currentIndex !== -1 && (
+        {(shownIndex !== -1 || scrubOffset !== null) && (
           <li
             aria-hidden="true"
-            className="pointer-events-none absolute top-1.5 left-1.5 transition-transform duration-[560ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
+            className={cn(
+              "pointer-events-none absolute top-1.5 left-1.5",
+              // Glued to the finger while swiping; springs everywhere else.
+              scrubOffset === null &&
+                "transition-transform duration-[560ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none",
+            )}
             style={{
               width: SLOT,
               height: SLOT,
-              transform: `translateX(${currentIndex * (SLOT + GAP)}px)`,
+              transform: `translateX(${scrubOffset ?? shownIndex * (SLOT + GAP)}px)`,
             }}
           >
             <span
-              // Re-keyed on every move so the squish replays each time.
-              key={currentIndex}
+              // Re-keyed on every move so the squish replays each time (not
+              // mid-swipe, where it would replay on every slot crossed).
+              key={scrubOffset === null ? shownIndex : "scrub"}
               className="nav-blob block size-full rounded-full bg-white/[0.13] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14),0_4px_14px_-4px_rgba(0,0,0,0.6)] ring-1 ring-white/10"
             />
           </li>
         )}
 
         {ROUTES.map((route, index) => {
-          const isActive = index === currentIndex;
+          const isActive = index === shownIndex;
           const Icon = route.icon;
 
           return (
             <li key={route.href} className="relative">
               <Link
                 href={route.href}
+                onClick={onLinkClick}
+                draggable={false}
                 aria-label={route.label}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex items-center justify-center rounded-full transition-[color,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-90",
+                  // ::after widens the hit area: up and down past the pill's
+                  // padding, and sideways across half the gap to each neighbour.
+                  "relative flex items-center justify-center rounded-full transition-[color,transform] after:absolute after:-inset-x-0.5 after:-inset-y-2.5 duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-90",
                   isActive ? "text-white" : "text-white/50 hover:text-white/80",
                 )}
                 style={{ width: SLOT, height: SLOT }}
@@ -132,4 +167,101 @@ export function BottomNav() {
       </div>
     </nav>
   );
+}
+
+/** Movement, in px, before a press counts as a swipe rather than a tap. */
+const SWIPE_THRESHOLD = 8;
+
+/**
+ * Swipe-to-switch for the nav pill. Pointer events on the <ul>: once a press
+ * moves sideways past SWIPE_THRESHOLD, the highlight tracks the finger
+ * (`offset`, px from the first slot) and the slot under it becomes the shown
+ * tab (`index`). Releasing selects it. The click that follows a swipe is
+ * swallowed so the link under the finger doesn't also navigate.
+ */
+function useNavScrub({
+  currentIndex,
+  onSelect,
+}: {
+  currentIndex: number;
+  onSelect: (index: number) => void;
+}) {
+  const listRef = React.useRef<HTMLUListElement>(null);
+  const [offset, setOffset] = React.useState<number | null>(null);
+  const [index, setIndex] = React.useState<number | null>(null);
+  const gesture = React.useRef<{ id: number; startX: number; swiping: boolean } | null>(null);
+  /** Clicks before this time (ms) follow a swipe and are ignored. */
+  const swallowClicksUntil = React.useRef(0);
+  const lastIndex = React.useRef<number | null>(null);
+
+  // Once the chosen route has loaded, the pathname takes over again.
+  React.useEffect(() => {
+    if (gesture.current?.swiping) return;
+    setIndex(null);
+  }, [currentIndex]);
+
+  const step = SLOT + GAP;
+  const maxOffset = (ROUTES.length - 1) * step;
+
+  function track(clientX: number) {
+    const list = listRef.current;
+    if (!list) return;
+    // The highlight's left edge, centred under the finger.
+    const left = clientX - list.getBoundingClientRect().left - 6 - SLOT / 2;
+    const clamped = Math.min(Math.max(left, 0), maxOffset);
+    const next = Math.round(clamped / step);
+    setOffset(clamped);
+    setIndex(next);
+    if (next !== lastIndex.current) {
+      lastIndex.current = next;
+      // A tiny tick per tab crossed, where the device supports it.
+      navigator.vibrate?.(6);
+    }
+  }
+
+  const handlers = {
+    onPointerDown(event: React.PointerEvent<HTMLUListElement>) {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      gesture.current = { id: event.pointerId, startX: event.clientX, swiping: false };
+    },
+    onPointerMove(event: React.PointerEvent<HTMLUListElement>) {
+      const g = gesture.current;
+      if (!g || g.id !== event.pointerId) return;
+      if (!g.swiping) {
+        if (Math.abs(event.clientX - g.startX) < SWIPE_THRESHOLD) return;
+        g.swiping = true;
+        lastIndex.current = currentIndex;
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
+      track(event.clientX);
+    },
+    onPointerUp(event: React.PointerEvent<HTMLUListElement>) {
+      const g = gesture.current;
+      gesture.current = null;
+      if (!g || g.id !== event.pointerId || !g.swiping) return;
+      // The click (if any) fires right after pointerup; a short window
+      // catches it without eating a later, real tap.
+      swallowClicksUntil.current = event.timeStamp + 400;
+      setOffset(null);
+      const target = lastIndex.current;
+      if (target === null || target === currentIndex) {
+        setIndex(null);
+        return;
+      }
+      // Keep showing the target until its route loads (see the effect).
+      setIndex(target);
+      onSelect(target);
+    },
+    onPointerCancel() {
+      gesture.current = null;
+      setOffset(null);
+      setIndex(null);
+    },
+  };
+
+  function onLinkClick(event: React.MouseEvent) {
+    if (event.timeStamp < swallowClicksUntil.current) event.preventDefault();
+  }
+
+  return { listRef, handlers, offset, index, onLinkClick };
 }

@@ -51,25 +51,28 @@ export function AppHero({
         className="relative z-10 flex items-center justify-between gap-3"
       >
         <div
-          className="flex size-10 items-center justify-center"
+          className="flex size-12 items-center justify-center"
           role="img"
           aria-label="Pulse"
         >
-          <AppMark className="size-6 text-white" />
+          <AppMark className="size-7 text-white" />
         </div>
 
+        {/* The month picker and "+" are 48px, the same as the bottom nav's
+            tabs, and each reaches 4px further (::after) so near-misses
+            count; the extra areas just meet in the 8px gap between them. */}
         <div className="flex items-center gap-2">
           {showMonthPicker && (
-            <MonthPicker className="h-10 min-w-0 bg-white/12 px-4 text-xs text-white/85 ring-1 ring-white/15 hover:bg-white/20 [&_svg]:text-white/60" />
+            <MonthPicker className="relative h-12 min-w-0 bg-white/12 px-5 text-sm after:absolute after:-inset-1 text-white/85 ring-1 ring-white/15 hover:bg-white/20 [&_svg]:size-4 [&_svg]:text-white/60" />
           )}
           {action && (
             <button
               type="button"
               aria-label={action.label}
               onClick={action.onClick}
-              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/12 text-white ring-1 ring-white/15 transition-[transform,background-color] duration-200 hover:bg-white/20 active:scale-90"
+              className="relative flex size-12 shrink-0 items-center justify-center rounded-full bg-white/12 text-white ring-1 ring-white/15 transition-[transform,background-color] duration-200 after:absolute after:-inset-1 hover:bg-white/20 active:scale-90"
             >
-              <Plus className="size-5" strokeWidth={1.75} />
+              <Plus className="size-[1.35rem]" strokeWidth={1.75} />
             </button>
           )}
         </div>

@@ -94,6 +94,9 @@ export function SpendingCalendar({
   );
   const selectedDay = selected?.monthId === monthId ? days[selected.day - 1] : null;
 
+  // Nothing spent this month: an empty grid says nothing, so leave it out.
+  if (total === 0) return null;
+
   const now = new Date();
   const isCurrentMonth = now.getFullYear() === year && now.getMonth() === month;
   const today = isCurrentMonth ? now.getDate() : null;
