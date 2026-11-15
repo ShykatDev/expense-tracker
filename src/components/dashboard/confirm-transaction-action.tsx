@@ -91,8 +91,9 @@ export function ConfirmTransactionActionDialog({
             <p className="truncate text-sm font-medium text-foreground">
               {label}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground">
               {transaction?.type === "income" ? "Income" : "Expense"}
+              {transaction?.note && ` · ${transaction.note}`}
             </p>
           </div>
           <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">

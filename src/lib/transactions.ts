@@ -24,7 +24,30 @@ export interface Transaction {
   category: string;
   amount: number;
   createdAt: number;
+  /** Optional short free-text note, e.g. "lunch with Rafi". */
+  note?: string;
+  /**
+   * The account the money moved through. Missing means the default Cash
+   * account (see lib/accounts), which keeps pre-accounts data valid.
+   */
+  accountId?: string;
 }
+
+/** What a caller supplies to create an entry; everything past amount is optional. */
+export interface NewTransaction {
+  type: TransactionType;
+  category: string;
+  amount: number;
+  /** Backdate the entry. Defaults to now. */
+  createdAt?: number;
+  note?: string;
+  accountId?: string;
+}
+
+/** The fields of an existing entry that can be edited. */
+export type TransactionPatch = Partial<
+  Pick<Transaction, "category" | "amount" | "type" | "createdAt" | "note" | "accountId">
+>;
 
 export interface CategoryOption {
   key: string;

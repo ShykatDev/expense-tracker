@@ -95,12 +95,20 @@ export function NumericKeypad({
         </KeypadButton>
       ) : (
         <KeypadButton
-          className={keyClass}
+          // The save key stands apart from the digits: solid black (white on
+          // the dark keypad, where black would vanish), so it's clear which
+          // key submits.
+          className={cn(
+            compact ? "text-2xl" : "text-3xl",
+            variant === "dark"
+              ? "bg-white text-black hover:bg-white/90 active:bg-white/80"
+              : "bg-black text-white hover:bg-neutral-800 active:bg-neutral-700",
+          )}
           onClick={onConfirm}
           disabled={disabled}
           aria-label="Save transaction"
         >
-          <Check className={compact ? "size-6" : "size-7"} strokeWidth={1.75} />
+          <Check className={compact ? "size-6" : "size-7"} strokeWidth={2.25} />
         </KeypadButton>
       )}
     </div>

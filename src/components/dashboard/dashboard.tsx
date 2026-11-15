@@ -15,12 +15,17 @@ import {
 import { SheetButton, SheetSection } from "@/components/layout/app-shell";
 import { getSavingsVerdict } from "@/lib/savings";
 import { monthKey } from "@/lib/targets";
+import { findBudgetAlerts } from "@/lib/budget-alerts";
 
 import { usePublishBalance } from "./balance-summary-store";
+import { BudgetAlerts } from "./budget-alerts";
 import { ConfirmTransactionActionDialog } from "./confirm-transaction-action";
 import { DashboardHero } from "./dashboard-hero";
 import { ExpandableSheet } from "@/components/layout/expandable-sheet";
+import { MonthlyRecap } from "./monthly-recap";
+import { RecurringDueCard } from "@/components/recurring/recurring-due-card";
 import { useMonthNav } from "./navbar";
+import { SpendingCalendar } from "./spending-calendar";
 import { SpendingAnalytics, SpentCategories } from "./spending-analytics";
 import { TargetsList } from "./targets-list";
 import { TransactionHistory } from "./transaction-history";
@@ -218,6 +223,18 @@ function DashboardContent({
     [monthTransactions],
   );
 
+  // Targets at or past 80% of the navbar month's cap, for the alert strip.
+  const budgetAlerts = React.useMemo(
+    () =>
+      findBudgetAlerts({
+        targets,
+        monthKey: currentMonthKey,
+        spentByLabel: spentByCategoryLabel,
+        customCategories: allCustomCategories,
+      }),
+    [targets, currentMonthKey, spentByCategoryLabel, allCustomCategories],
+  );
+
   const verdict = React.useMemo(
     () =>
       getSavingsVerdict({
@@ -255,9 +272,23 @@ function DashboardContent({
         )}
         details={
           <>
+            {/* Time-sensitive cards first: recurring entries waiting to be
+                confirmed, last month's recap, then budget warnings. Each
+                renders nothing when it has nothing to say. */}
+            <RecurringDueCard />
+
+            <MonthlyRecap transactions={allTransactions} />
+
+            <BudgetAlerts alerts={budgetAlerts} />
+
             <SpentCategories
               transactions={monthTransactions}
               customCategories={allCustomCategories}
+            />
+
+            <SpendingCalendar
+              transactions={monthTransactions}
+              monthAnchor={monthAnchor}
             />
 
             <TargetsList

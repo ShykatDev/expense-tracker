@@ -1,16 +1,33 @@
 "use client";
 
-import { ChevronRight, Database, Goal, Receipt, RotateCw, Tags, Target, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  Database,
+  Goal,
+  Receipt,
+  Repeat,
+  RotateCw,
+  Tags,
+  Target,
+  Trash2,
+  Smartphone,
+  Wallet,
+} from "lucide-react";
+import Link from "next/link";
 import * as React from "react";
 
+import { AccountsSection } from "@/components/accounts/accounts-section";
+import { useAccounts } from "@/components/accounts/accounts-provider";
 import { useCategories } from "@/components/categories/categories-provider";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { useGoals } from "@/components/goals/goals-provider";
+import { useRecurring } from "@/components/recurring/recurring-provider";
 import { ExpandableSheet } from "@/components/layout/expandable-sheet";
 import {
   AppHero,
   SheetSection,
 } from "@/components/layout/app-shell";
+import { InstallGuideDialog } from "@/components/settings/install-guide-dialog";
 import { useTargets } from "@/components/targets/targets-provider";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { Button } from "@/components/ui/button";
@@ -25,6 +42,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { clearGoalImages } from "@/lib/goal-images";
 import { cn } from "@/lib/utils";
 
 /** Every key this app writes starts with this, so a reset can find them all. */
@@ -46,7 +64,9 @@ export function SettingsView() {
   const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { goals } = useGoals();
+  const { rules: recurringRules, due: recurringDue } = useRecurring();
   const { targets } = useTargets();
+  const { accounts, transfers } = useAccounts();
 
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [confirmText, setConfirmText] = React.useState("");
@@ -58,9 +78,11 @@ export function SettingsView() {
     { label: "Custom categories", count: customCategoryCount, icon: Tags },
     { label: "Monthly targets", count: targets.length, icon: Target },
     { label: "Goals", count: goals.length, icon: Goal },
+    { label: "Accounts", count: accounts.length, icon: Wallet },
   ];
 
   const [reloading, setReloading] = React.useState(false);
+  const [installOpen, setInstallOpen] = React.useState(false);
 
   // An installed web app has no browser reload button or pull-to-refresh,
   // so this is the way to pick up a new version. Data lives in
@@ -75,8 +97,11 @@ export function SettingsView() {
     if (confirmText.trim().toUpperCase() !== CONFIRM_WORD) return;
     clearAllData();
     // Every provider holds its data in memory and only writes on change, so a
-    // full reload is what guarantees nothing old is written back.
-    window.location.replace("/");
+    // full reload is what guarantees nothing old is written back. Goal photos
+    // live in IndexedDB, so wait for them to be cleared first.
+    clearGoalImages()
+      .catch(() => {})
+      .finally(() => window.location.replace("/"));
   }
 
   return (
@@ -89,6 +114,14 @@ export function SettingsView() {
             <p className="text-xs text-white/55">
               {transactions.length === 1 ? "entry" : "entries"} stored on this device
             </p>
+            <button
+              type="button"
+              onClick={() => setInstallOpen(true)}
+              className="mt-5 flex h-10 items-center gap-2 rounded-full bg-white/12 pr-4 pl-3 text-sm text-white ring-1 ring-white/15 transition-[transform,background-color] hover:bg-white/20 active:scale-95"
+            >
+              <Smartphone className="size-4 text-white/70" />
+              Install app
+            </button>
           </AppHero>
         }
         peek={() => (
@@ -121,6 +154,30 @@ export function SettingsView() {
         )}
         details={
           <>
+            <AccountsSection />
+
+            <SheetSection title="Recurring">
+              <Card className="gap-0 py-1">
+                <Link
+                  href="/recurring"
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/4 active:bg-white/6"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
+                    <Repeat className="size-4 text-white" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm text-white/85">Recurring transactions</span>
+                    <span className="block text-xs text-white/50">
+                      {recurringRules.length === 0
+                        ? "Rent, salary, bills — set them up once"
+                        : `${recurringRules.length} ${recurringRules.length === 1 ? "rule" : "rules"}${recurringDue.length ? ` · ${recurringDue.length} due` : ""}`}
+                    </span>
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-white/50" />
+                </Link>
+              </Card>
+            </SheetSection>
+
             <SheetSection title="App">
               <Card className="gap-0 py-1">
                 <button
@@ -155,8 +212,8 @@ export function SettingsView() {
                     <p className="text-sm font-semibold text-white">Reset all data</p>
                     <p className="mt-0.5 text-xs leading-relaxed text-white/50">
                       Permanently deletes every transaction, custom category,
-                      target and goal, and restores the default categories. This
-                      can&apos;t be undone.
+                      target, goal, account and transfer, and restores the
+                      defaults. This can&apos;t be undone.
                     </p>
                   </div>
                 </div>
@@ -186,8 +243,13 @@ export function SettingsView() {
               {transactions.length === 1 ? "transaction" : "transactions"},{" "}
               {customCategoryCount} custom{" "}
               {customCategoryCount === 1 ? "category" : "categories"},{" "}
-              {targets.length} {targets.length === 1 ? "target" : "targets"} and{" "}
-              {goals.length} {goals.length === 1 ? "goal" : "goals"}. Type{" "}
+              {targets.length} {targets.length === 1 ? "target" : "targets"},{" "}
+              {goals.length} {goals.length === 1 ? "goal" : "goals"}
+              {accounts.length > 1 &&
+                `, ${accounts.length - 1} extra ${accounts.length === 2 ? "account" : "accounts"}`}
+              {transfers.length > 0 &&
+                ` and ${transfers.length} ${transfers.length === 1 ? "transfer" : "transfers"}`}
+              . Type{" "}
               <span className="font-semibold text-white">{CONFIRM_WORD}</span> to
               confirm.
             </DialogDescription>
@@ -220,6 +282,8 @@ export function SettingsView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <InstallGuideDialog open={installOpen} onOpenChange={setInstallOpen} />
     </>
   );
 }

@@ -3,12 +3,40 @@
 import * as React from "react";
 
 import { useLocalStorageJson } from "@/hooks/use-local-storage";
-import type { Goal, GoalCompletion, GoalCompletionSource } from "@/lib/goals";
+import {
+  nextGoalOrder,
+  sortGoalsByPriority,
+  type Goal,
+  type GoalCompletion,
+  type GoalCompletionSource,
+  type GoalPriceChange,
+} from "@/lib/goals";
 import {
   GOALS_STORAGE_KEY,
   GOAL_COMPLETIONS_STORAGE_KEY,
 } from "@/lib/transactions";
 import { createId } from "@/lib/id"
+
+/** Keeps well-formed entries; drops the field when nothing valid is left. */
+function sanitizePriceHistory(value: unknown): GoalPriceChange[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const history = value.filter(
+    (entry): entry is GoalPriceChange =>
+      !!entry &&
+      typeof entry === "object" &&
+      typeof entry.amount === "number" &&
+      Number.isFinite(entry.amount) &&
+      entry.amount > 0 &&
+      typeof entry.changedAt === "number" &&
+      Number.isFinite(entry.changedAt),
+  );
+  return history.length
+    ? history.map(({ amount, changedAt }) => ({ amount, changedAt }))
+    : undefined;
+}
+
+/** Older price changes are dropped past this, keeping the original price. */
+const MAX_PRICE_HISTORY = 20;
 
 function sanitizeGoals(parsed: unknown): Goal[] {
   if (!Array.isArray(parsed)) return [];
@@ -40,12 +68,31 @@ function sanitizeGoals(parsed: unknown): Goal[] {
       iconKey: typeof value.iconKey === "string" ? value.iconKey : undefined,
       targetDate:
         typeof value.targetDate === "number" ? value.targetDate : undefined,
+      links: Array.isArray(value.links)
+        ? value.links.filter((link): link is string => typeof link === "string" && !!link)
+        : undefined,
+      imageId: typeof value.imageId === "string" ? value.imageId : undefined,
+      order:
+        typeof value.order === "number" && Number.isFinite(value.order)
+          ? value.order
+          : undefined,
+      priceHistory: sanitizePriceHistory(value.priceHistory),
       status,
       createdAt:
         typeof value.createdAt === "number" ? value.createdAt : Date.now(),
       updatedAt:
         typeof value.updatedAt === "number" ? value.updatedAt : Date.now(),
     });
+  }
+
+  // Goals saved before priorities existed have no order. Give them one
+  // after any ordered goals, oldest first, so the list has a stable order
+  // to start reordering from.
+  if (goals.some((goal) => goal.order === undefined)) {
+    let next = nextGoalOrder(goals);
+    for (const goal of sortGoalsByPriority(goals)) {
+      if (goal.order === undefined) goal.order = next++;
+    }
   }
   return goals;
 }
@@ -123,19 +170,27 @@ export function useGoals() {
       targetAmount,
       iconKey,
       targetDate,
+      links,
+      imageId,
     }: {
       label: string
       targetAmount: number
       iconKey?: string
       targetDate?: number
+      links?: string[]
+      imageId?: string
     }) => {
       const now = Date.now()
       const goal: Goal = {
         id: createId(),
+        // New goals join the end of the queue.
+        order: nextGoalOrder(goals),
         label: label.trim(),
         targetAmount,
         iconKey: iconKey || undefined,
         targetDate,
+        links: links?.length ? links : undefined,
+        imageId,
         status: "active",
         createdAt: now,
         updatedAt: now,
@@ -143,7 +198,7 @@ export function useGoals() {
       setGoals((prev) => [goal, ...prev])
       return goal
     },
-    [setGoals],
+    [goals, setGoals],
   )
 
   const updateGoal = React.useCallback(
@@ -152,14 +207,58 @@ export function useGoals() {
       patch: Partial<
         Pick<
           Goal,
-          "label" | "targetAmount" | "iconKey" | "targetDate" | "status"
+          | "label"
+          | "targetAmount"
+          | "iconKey"
+          | "targetDate"
+          | "links"
+          | "imageId"
+          | "status"
+          | "order"
         >
       >,
     ) => {
+      const now = Date.now()
       setGoals((prev) =>
-        prev.map((goal) =>
-          goal.id === id ? { ...goal, ...patch, updatedAt: Date.now() } : goal,
-        ),
+        prev.map((goal) => {
+          if (goal.id !== id) return goal
+          // A new price records the old one, so the card can show how the
+          // price moved since the goal was added.
+          let priceHistory = goal.priceHistory
+          if (
+            patch.targetAmount !== undefined &&
+            patch.targetAmount !== goal.targetAmount
+          ) {
+            const all = [
+              ...(goal.priceHistory ?? []),
+              { amount: goal.targetAmount, changedAt: now },
+            ]
+            priceHistory =
+              all.length > MAX_PRICE_HISTORY
+                ? [all[0], ...all.slice(all.length - MAX_PRICE_HISTORY + 1)]
+                : all
+          }
+          return { ...goal, ...patch, priceHistory, updatedAt: now }
+        }),
+      )
+    },
+    [setGoals],
+  )
+
+  /**
+   * Sets the priority order: `orderedIds[0]` comes first. Goals not in the
+   * list (completed ones, say) keep their order.
+   */
+  const reorderGoals = React.useCallback(
+    (orderedIds: string[]) => {
+      const position = new Map(orderedIds.map((id, index) => [id, index]))
+      setGoals((prev) =>
+        prev.map((goal) => {
+          const order = position.get(goal.id)
+          return order === undefined || order === goal.order
+            ? goal
+            : { ...goal, order }
+        }),
       )
     },
     [setGoals],
@@ -218,7 +317,14 @@ export function useGoals() {
       setGoals((prev) =>
         prev.map((goal) =>
           goal.id === id
-            ? { ...goal, status: "active", updatedAt: Date.now() }
+            ? {
+                ...goal,
+                status: "active",
+                // Back of the queue, so it can't silently jump ahead of
+                // goals the user has since put in order.
+                order: nextGoalOrder(prev),
+                updatedAt: Date.now(),
+              }
             : goal,
         ),
       )
@@ -232,6 +338,7 @@ export function useGoals() {
     completions,
     addGoal,
     updateGoal,
+    reorderGoals,
     removeGoal,
     completeGoal,
     reopenGoal,

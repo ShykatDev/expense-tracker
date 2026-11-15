@@ -1,9 +1,12 @@
+import { AccountsProvider } from "@/components/accounts/accounts-provider";
 import { SplashScreen } from "@/components/brand/splash-screen";
 import { CategoriesProvider } from "@/components/categories/categories-provider";
 import { TransactionsProvider } from "@/components/dashboard/transactions-provider";
 import { GoalsProvider } from "@/components/goals/goals-provider";
+import { RecurringProvider } from "@/components/recurring/recurring-provider";
 import { TargetsProvider } from "@/components/targets/targets-provider";
 import { AppToaster } from "@/components/brand/app-toaster";
+import { InstallPromptCapture } from "@/lib/install-prompt";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
@@ -77,12 +80,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <CategoriesProvider>
           <TransactionsProvider>
             <SplashScreen />
-            <TargetsProvider>
-              <GoalsProvider>{children}</GoalsProvider>
-            </TargetsProvider>
+            <AccountsProvider>
+              <TargetsProvider>
+                <GoalsProvider>
+                  <RecurringProvider>{children}</RecurringProvider>
+                </GoalsProvider>
+              </TargetsProvider>
+            </AccountsProvider>
           </TransactionsProvider>
         </CategoriesProvider>
         <AppToaster />
+        <InstallPromptCapture />
       </body>
     </html>
   );

@@ -9,6 +9,7 @@ interface GoalsContextValue {
   completions: ReturnType<typeof useGoalsState>["completions"];
   addGoal: ReturnType<typeof useGoalsState>["addGoal"];
   updateGoal: ReturnType<typeof useGoalsState>["updateGoal"];
+  reorderGoals: ReturnType<typeof useGoalsState>["reorderGoals"];
   removeGoal: ReturnType<typeof useGoalsState>["removeGoal"];
   completeGoal: ReturnType<typeof useGoalsState>["completeGoal"];
   reopenGoal: ReturnType<typeof useGoalsState>["reopenGoal"];
@@ -50,6 +51,7 @@ export function GoalsProvider({ children }: { children: React.ReactNode }) {
     completions,
     addGoal,
     updateGoal,
+    reorderGoals,
     removeGoal,
     completeGoal,
     reopenGoal,
@@ -66,6 +68,7 @@ export function GoalsProvider({ children }: { children: React.ReactNode }) {
       completions,
       addGoal,
       updateGoal,
+      reorderGoals,
       removeGoal,
       completeGoal,
       reopenGoal,
@@ -76,6 +79,7 @@ export function GoalsProvider({ children }: { children: React.ReactNode }) {
       completions,
       addGoal,
       updateGoal,
+      reorderGoals,
       removeGoal,
       completeGoal,
       reopenGoal,

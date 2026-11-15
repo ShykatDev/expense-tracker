@@ -3,26 +3,29 @@
 import * as React from "react";
 
 import { useTransactions as useTransactionsState } from "@/hooks/use-transactions";
-import type { Transaction, TransactionType } from "@/lib/transactions";
+import type {
+  NewTransaction,
+  Transaction,
+  TransactionPatch,
+  TransactionType,
+} from "@/lib/transactions";
 
 interface TransactionsContextValue {
   transactions: Transaction[];
-  addTransactions: (entries: {
-    type: TransactionType;
-    category: string;
-    amount: number;
-    createdAt?: number;
-  }[]) => Transaction[];
+  /** New fields (note, accountId) are optional, so older callers keep working. */
+  addTransactions: (entries: NewTransaction[]) => Transaction[];
   removeTransaction: (id: string) => void;
   updateTransaction: (
     id: string,
-    patch: Partial<Pick<Transaction, "category" | "amount" | "type" | "createdAt">>,
+    patch: TransactionPatch,
   ) => void;
   renameTransactionCategory: (
     type: TransactionType,
     fromLabel: string,
     toLabel: string,
   ) => void;
+  /** Moves an account's entries to another account (undefined = Cash). */
+  reassignTransactionAccount: (fromAccountId: string, toAccountId?: string) => void;
   isLoaded: boolean;
 }
 
@@ -41,7 +44,15 @@ export function TransactionsProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { transactions, addTransactions, removeTransaction, updateTransaction, renameCategory, isLoaded } =
+  const {
+    transactions,
+    addTransactions,
+    removeTransaction,
+    updateTransaction,
+    renameCategory,
+    reassignAccount,
+    isLoaded,
+  } =
     useTransactionsState();
 
   const value = React.useMemo(
@@ -51,6 +62,7 @@ export function TransactionsProvider({
       removeTransaction,
       updateTransaction,
       renameTransactionCategory: renameCategory,
+      reassignTransactionAccount: reassignAccount,
       isLoaded,
     }),
     [
@@ -59,6 +71,7 @@ export function TransactionsProvider({
       removeTransaction,
       updateTransaction,
       renameCategory,
+      reassignAccount,
       isLoaded,
     ],
   );

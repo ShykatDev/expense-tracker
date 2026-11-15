@@ -1,13 +1,28 @@
 "use client";
 
-import { Check, Pencil, Target, Trash2 } from "lucide-react";
+import {
+  ArrowUpDown,
+  CalendarCheck,
+  CalendarClock,
+  CalendarDays,
+  Check,
+  ExternalLink,
+  Gift,
+  Hourglass,
+  Pencil,
+  PiggyBank,
+  RotateCcw,
+  Target,
+  Trash2,
+} from "lucide-react";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
 import { useMonthNav } from "@/components/dashboard/navbar";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { GoalCompleteDialog } from "@/components/goals/goal-complete-dialog";
-import { GoalDialog } from "@/components/goals/goal-dialog";
+import { GoalDialog, type GoalDialogInput } from "@/components/goals/goal-dialog";
+import { GoalReorderList } from "@/components/goals/goal-reorder-list";
 import { SparkleBurst } from "@/components/goals/sparkle-burst";
 import { useGoals } from "@/components/goals/goals-provider";
 import { ExpandableSheet } from "@/components/layout/expandable-sheet";
@@ -29,22 +44,43 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useGoalImage } from "@/hooks/use-goal-image";
 import { getCategoryIconByKey } from "@/lib/category-icons";
+import { deleteGoalImage, saveGoalImage } from "@/lib/goal-images";
+import { createId } from "@/lib/id";
 import {
+  goalLinkLabel,
   computeGoalProgress,
   computeGoalRemaining,
+  computeSavingsPace,
   daysUntil,
+  estimateGoalDates,
+  formatEstimateDuration,
+  goalPriceDelta,
+  goalPriceTimeline,
   isGoalFunded,
+  sortGoalsByPriority,
   type Goal,
+  type GoalCompletion,
   type GoalCompletionSource,
+  type GoalEstimate,
 } from "@/lib/goals";
 import { computeSavings } from "@/lib/savings";
 import { cn } from "@/lib/utils";
 import { formatCurrency, isWithinDateRange } from "@/lib/transactions";
 
 export function GoalsView() {
-  const { goals, addGoal, updateGoal, removeGoal, completeGoal, reopenGoal, isLoaded } =
-    useGoals();
+  const {
+    goals,
+    completions,
+    addGoal,
+    updateGoal,
+    reorderGoals,
+    removeGoal,
+    completeGoal,
+    reopenGoal,
+    isLoaded,
+  } = useGoals();
   const { transactions, addTransactions } = useTransactions();
   const { monthAnchor } = useMonthNav();
 
@@ -52,8 +88,12 @@ export function GoalsView() {
   const [editing, setEditing] = React.useState<Goal | null>(null);
   const [deleting, setDeleting] = React.useState<Goal | null>(null);
   const [completing, setCompleting] = React.useState<Goal | null>(null);
+  /** The completed goal whose details are open. */
+  const [viewing, setViewing] = React.useState<Goal | null>(null);
   /** Bumped on each completion to play the sparkle burst. */
   const [sparkle, setSparkle] = React.useState(0);
+  /** Active goals shown as draggable rows to set their priority. */
+  const [reordering, setReordering] = React.useState(false);
 
   // Savings is measured against the navbar's month, so the goals page and
   // the dashboard always show the same figure.
@@ -81,38 +121,66 @@ export function GoalsView() {
     [goals, savings],
   );
 
-  // Affordable goals first: they're the ones ready to be marked as got.
-  const activeRows = rows
-    .filter((row) => row.goal.status === "active")
-    .sort((a, b) => Number(b.funded) - Number(a.funded));
+  // Active goals in the user's priority order: the top one is bought first.
+  const activeRows = React.useMemo(() => {
+    const byId = new Map(rows.map((row) => [row.goal.id, row]));
+    return sortGoalsByPriority(
+      rows.filter((row) => row.goal.status === "active").map((row) => row.goal),
+    ).map((goal) => byId.get(goal.id)!);
+  }, [rows]);
   const doneRows = rows.filter((row) => row.goal.status !== "active");
   const activeCount = activeRows.length;
   const fundedCount = activeRows.filter((row) => row.funded).length;
+  const canReorder = activeCount > 1;
+  const showReorder = reordering && canReorder;
+
+  // How much a typical recent month saves, from the full ledger (not just
+  // the navbar month), to project when each goal becomes affordable.
+  const pace = React.useMemo(() => computeSavingsPace(transactions), [transactions]);
+  const estimates = React.useMemo(
+    () => estimateGoalDates(activeRows.map((row) => row.goal), savings, pace),
+    [activeRows, savings, pace],
+  );
 
   function openCreate() {
     setEditing(null);
     setDialogOpen(true);
   }
 
-  function handleSubmit(input: {
-    label: string;
-    targetAmount: number;
-    iconKey: string;
-    targetDate?: number;
-  }) {
+  async function handleSubmit({ image, ...input }: GoalDialogInput) {
+    // The photo goes to IndexedDB first; the goal only stores its id.
+    const previousImageId = editing?.imageId;
+    let imageId = previousImageId;
+    if (image === null) {
+      imageId = undefined;
+    } else if (image) {
+      const nextId = createId();
+      try {
+        await saveGoalImage(nextId, image);
+        imageId = nextId;
+      } catch {
+        toast.error("Couldn’t save the photo — storage may be full");
+      }
+    }
+    if (previousImageId && previousImageId !== imageId) {
+      deleteGoalImage(previousImageId).catch(() => {});
+    }
+
+    const fields = { ...input, links: input.links.length ? input.links : undefined, imageId };
     if (editing) {
-      updateGoal(editing.id, input);
+      updateGoal(editing.id, fields);
       toast.success(`Updated ${input.label}`);
       return;
     }
 
-    addGoal(input);
+    addGoal(fields);
     toast.success(`Added ${input.label}`);
   }
 
   function handleDelete() {
     if (!deleting) return;
     removeGoal(deleting.id);
+    if (deleting.imageId) deleteGoalImage(deleting.imageId).catch(() => {});
     toast.success(`Deleted ${deleting.label}`);
     setDeleting(null);
   }
@@ -172,7 +240,23 @@ export function GoalsView() {
         details={
           <SheetSection
             title="Your goals"
-            subtitle="Progress is measured against this month's savings"
+            subtitle={
+              showReorder
+                ? "Drag to set priority. Top goals are bought first."
+                : "Progress is measured against this month's savings"
+            }
+            action={
+              canReorder ? (
+                <SheetButton
+                  onClick={() => setReordering((prev) => !prev)}
+                  aria-pressed={showReorder}
+                  className={cn(showReorder && "bg-white text-black hover:bg-white/90")}
+                >
+                  {showReorder ? <Check /> : <ArrowUpDown />}
+                  {showReorder ? "Done" : "Reorder"}
+                </SheetButton>
+              ) : undefined
+            }
           >
           {!isLoaded ? (
             <Card className="gap-2 py-4">
@@ -197,7 +281,15 @@ export function GoalsView() {
             </Card>
           ) : (
             <div className="flex flex-col gap-8">
-              {activeRows.length > 0 && (
+              {showReorder ? (
+                <GoalReorderList
+                  goals={activeRows.map((row) => row.goal)}
+                  onReorder={reorderGoals}
+                  renderThumb={(goal) => (
+                    <GoalThumb goal={goal} className="size-full" iconClassName="size-5" />
+                  )}
+                />
+              ) : activeRows.length > 0 && (
                 <div className="flex flex-col gap-3">
                   {activeRows.map((row) => (
                     <GoalCard
@@ -206,6 +298,7 @@ export function GoalsView() {
                       savings={savings}
                       funded={row.funded}
                       progress={row.progress}
+                      estimate={estimates.get(row.goal.id)}
                       onComplete={() => setCompleting(row.goal)}
                       onEdit={() => {
                         setEditing(row.goal);
@@ -223,8 +316,14 @@ export function GoalsView() {
                   <Card className="gap-0 py-1.5">
                     {doneRows.map((row) => (
                       <div key={row.goal.id} className="flex items-center gap-3 px-4 py-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setViewing(row.goal)}
+                          aria-label={`View ${row.goal.label}`}
+                          className="-my-1 -ml-2 flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 pl-2 text-left transition-colors hover:bg-white/4 active:bg-white/6"
+                        >
                         <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8 text-white/80">
-                          <GoalIcon iconKey={row.goal.iconKey} className="size-4" />
+                          <GoalThumb goal={row.goal} className="size-10 rounded-full" iconClassName="size-4" />
                           <span className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-[#a9c4ff] text-[#0a1f52] ring-2 ring-[#141518]">
                             <Check className="size-2.5" strokeWidth={3} />
                           </span>
@@ -235,21 +334,25 @@ export function GoalsView() {
                             {formatCurrency(row.goal.targetAmount)}
                           </span>
                         </span>
-                        <SheetButton
-                          onClick={() => {
-                            reopenGoal(row.goal.id);
-                            toast.success(`Reopened ${row.goal.label}`);
-                          }}
-                        >
-                          Reopen
-                        </SheetButton>
-                        <RowIconButton
-                          aria-label={`Delete ${row.goal.label}`}
-                          onClick={() => setDeleting(row.goal)}
-                          className={SUBTLE_ICON_BUTTON}
-                        >
-                          <Trash2 />
-                        </RowIconButton>
+                        </button>
+                        {/* Same spacing as the edit / delete pair on active cards. */}
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <SheetButton
+                            onClick={() => {
+                              reopenGoal(row.goal.id);
+                              toast.success(`Reopened ${row.goal.label}`);
+                            }}
+                          >
+                            Reopen
+                          </SheetButton>
+                          <RowIconButton
+                            aria-label={`Delete ${row.goal.label}`}
+                            onClick={() => setDeleting(row.goal)}
+                            className={SUBTLE_ICON_BUTTON}
+                          >
+                            <Trash2 />
+                          </RowIconButton>
+                        </div>
                       </div>
                     ))}
                   </Card>
@@ -262,6 +365,25 @@ export function GoalsView() {
       />
 
       <SparkleBurst burst={sparkle} />
+
+      <CompletedGoalDialog
+        goal={viewing}
+        completion={
+          viewing ? completions.find((entry) => entry.goalId === viewing.id) : undefined
+        }
+        onOpenChange={(open) => {
+          if (!open) setViewing(null);
+        }}
+        onReopen={(goal) => {
+          reopenGoal(goal.id);
+          toast.success(`Reopened ${goal.label}`);
+          setViewing(null);
+        }}
+        onDelete={(goal) => {
+          setViewing(null);
+          setDeleting(goal);
+        }}
+      />
 
       <GoalDialog
         key={editing?.id ?? "create"}
@@ -320,6 +442,278 @@ const SUBTLE_ICON_BUTTON = "bg-white/6";
 /** A goal's chosen icon, rendered without creating a component per render. */
 function GoalIcon({ iconKey, className }: { iconKey?: string; className?: string }) {
   return React.createElement(getCategoryIconByKey(iconKey), { className });
+}
+
+/** The goal's photo when it has one, otherwise its icon. */
+function GoalThumb({
+  goal,
+  className,
+  iconClassName,
+}: {
+  goal: Goal;
+  className?: string;
+  iconClassName?: string;
+}) {
+  const url = useGoalImage(goal.imageId);
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element -- local blob URL
+    return <img src={url} alt="" className={cn("object-cover", className)} />;
+  }
+  return <GoalIcon iconKey={goal.iconKey} className={iconClassName} />;
+}
+
+/** Bookmarked product links as compact chips showing just the site name. */
+function GoalLinks({ links }: { links: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {links.map((href) => (
+        <a
+          key={href}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={href}
+          className="flex h-7 max-w-[11rem] items-center gap-1.5 rounded-full bg-white/8 px-3 text-xs text-white/70 transition-colors hover:bg-white/12 hover:text-white active:scale-95"
+        >
+          <span className="truncate">{goalLinkLabel(href)}</span>
+          <ExternalLink className="size-3 shrink-0 text-white/45" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function formatDay(time: number) {
+  return new Date(time).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/**
+ * A completed goal's details: its photo (or icon), what it cost, when and
+ * how it was got, how long it took, and the saved product links — with
+ * Reopen and Delete at the bottom.
+ */
+function CompletedGoalDialog({
+  goal,
+  completion,
+  onOpenChange,
+  onReopen,
+  onDelete,
+}: {
+  goal: Goal | null;
+  completion?: GoalCompletion;
+  onOpenChange: (open: boolean) => void;
+  onReopen: (goal: Goal) => void;
+  onDelete: (goal: Goal) => void;
+}) {
+  // Keep the last goal while the dialog animates closed.
+  const [shown, setShown] = React.useState(goal);
+  if (goal && goal !== shown) setShown(goal);
+  const current = goal ?? shown;
+
+  const completedAt = completion?.createdAt ?? current?.updatedAt;
+  const daysTaken =
+    current && completedAt
+      ? Math.max(1, Math.round((completedAt - current.createdAt) / 86_400_000))
+      : null;
+
+  const details = current
+    ? [
+        completion && {
+          icon: completion.source === "gift" ? Gift : PiggyBank,
+          label: "How",
+          value: completion.source === "gift" ? "It was a gift" : "Bought with savings",
+        },
+        completedAt && {
+          icon: CalendarCheck,
+          label: "Completed",
+          value: formatDay(completedAt),
+        },
+        daysTaken && {
+          icon: Hourglass,
+          label: "Took",
+          value: `${daysTaken} ${daysTaken === 1 ? "day" : "days"}`,
+        },
+        current.targetDate && {
+          icon: CalendarDays,
+          label: "Target date",
+          value: completedAt
+            ? `${formatDay(current.targetDate)} · ${completedAt >= current.targetDate + 86_400_000 ? "late" : "on time"}`
+            : formatDay(current.targetDate),
+        },
+      ].filter((item): item is { icon: typeof Gift; label: string; value: string } => Boolean(item))
+    : [];
+
+  return (
+    <Dialog open={goal !== null} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        {current && (
+          <>
+            <div className="flex flex-col items-center gap-3 pt-2 text-center">
+              <span
+                className={cn(
+                  "relative flex items-center justify-center text-[#b9d0ff]",
+                  current.imageId
+                    ? "aspect-square w-40 overflow-hidden rounded-3xl bg-white/8"
+                    : "size-20 rounded-3xl bg-white/6",
+                )}
+              >
+                <GoalThumb goal={current} className="size-full" iconClassName="size-9" />
+              </span>
+              <span className="flex h-6 items-center gap-1.5 rounded-full bg-[#a9c4ff]/15 px-2.5 text-xs font-medium text-[#c7d8ff]">
+                <Check className="size-3" strokeWidth={3} />
+                Completed
+              </span>
+            </div>
+
+            <DialogHeader className="items-center pr-0 text-center">
+              <DialogTitle className="text-xl">{current.label}</DialogTitle>
+              <DialogDescription className="font-display text-3xl font-semibold tracking-tight text-white tabular-nums">
+                {formatCurrency(completion?.amount ?? current.targetAmount)}
+              </DialogDescription>
+            </DialogHeader>
+
+            {details.length > 0 && (
+              <div className="flex flex-col rounded-3xl bg-white/6 px-4 py-1">
+                {details.map((item, index) => (
+                  <div
+                    key={item.label}
+                    className={cn(
+                      "flex items-center gap-3 py-3 text-sm",
+                      index !== details.length - 1 && "border-b border-white/6",
+                    )}
+                  >
+                    <item.icon className="size-4 shrink-0 text-white/45" />
+                    <span className="text-white/55">{item.label}</span>
+                    <span className="ml-auto truncate text-right text-white/90 tabular-nums">
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <PriceHistory goal={current} />
+
+            {current.links && current.links.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="px-1 text-xs text-white/50">Links</p>
+                <GoalLinks links={current.links} />
+              </div>
+            )}
+
+            <DialogFooter className="flex-col sm:flex-row">
+              <Button size="lg" onClick={() => onReopen(current)}>
+                <RotateCcw className="size-4" />
+                Reopen goal
+              </Button>
+              <Button variant="outline" size="lg" onClick={() => onDelete(current)}>
+                <Trash2 className="size-4" />
+                Delete
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * How the price moved since the goal was added: a calm green when it got
+ * cheaper, a muted rose when it went up. Nothing when it's unchanged.
+ */
+function PriceDeltaBadge({ delta }: { delta: number }) {
+  if (delta === 0) return null;
+  const dropped = delta < 0;
+  return (
+    <span
+      className={cn("whitespace-nowrap", dropped ? "text-emerald-300/85" : "text-rose-300/80")}
+      title={dropped ? "Cheaper than when you added it" : "Pricier than when you added it"}
+    >
+      {dropped ? "↓" : "↑"} {formatCurrency(delta)} since added
+    </span>
+  );
+}
+
+/**
+ * When the goal becomes affordable at the recent saving pace, or why there
+ * is no estimate. Kept to one quiet line under the progress bar.
+ */
+function EstimateLine({ estimate }: { estimate: Exclude<GoalEstimate, { kind: "ready" }> }) {
+  let text: React.ReactNode;
+  if (estimate.kind === "eta") {
+    const month = new Date(estimate.date).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
+    text = (
+      <>
+        At this pace: <span className="text-white/80">{month}</span>
+        <span className="text-white/35"> · {formatEstimateDuration(estimate.months)}</span>
+      </>
+    );
+  } else if (estimate.kind === "no-history") {
+    text = "Log a full month to see an estimate";
+  } else {
+    text = "Save more each month to get an estimate";
+  }
+  return (
+    <p className="flex items-center gap-1.5 text-xs tabular-nums text-white/50">
+      <CalendarClock className="size-3.5 shrink-0 text-white/40" />
+      <span className="truncate">{text}</span>
+    </p>
+  );
+}
+
+/**
+ * Every price a goal has had, newest first, with the day it was set and how
+ * it compares to the price before it. Only rendered when the price changed.
+ */
+function PriceHistory({ goal }: { goal: Goal }) {
+  if (!goal.priceHistory?.length) return null;
+  const timeline = goalPriceTimeline(goal);
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="px-1 text-xs text-white/50">Price history</p>
+      <div className="flex flex-col rounded-3xl bg-white/6 px-4 py-1">
+        {timeline
+          .map((entry, index) => ({
+            ...entry,
+            change: index === 0 ? 0 : entry.amount - timeline[index - 1].amount,
+            current: index === timeline.length - 1,
+          }))
+          .reverse()
+          .map((entry, index, list) => (
+            <div
+              key={`${entry.since}-${index}`}
+              className={cn(
+                "flex items-center gap-3 py-2.5 text-sm tabular-nums",
+                index !== list.length - 1 && "border-b border-white/6",
+              )}
+            >
+              <span className="text-white/55">{formatDay(entry.since)}</span>
+              {entry.change !== 0 && (
+                <span
+                  className={cn(
+                    "text-xs",
+                    entry.change < 0 ? "text-emerald-300/85" : "text-rose-300/80",
+                  )}
+                >
+                  {entry.change < 0 ? "↓" : "↑"} {formatCurrency(entry.change)}
+                </span>
+              )}
+              <span className={cn("ml-auto", entry.current ? "text-white/90" : "text-white/60")}>
+                {formatCurrency(entry.amount)}
+              </span>
+            </div>
+          ))}
+      </div>
+    </div>
+  );
 }
 
 /** Linear blend between two "#rrggbb" colours. */
@@ -387,6 +781,7 @@ function GoalCard({
   savings,
   funded,
   progress,
+  estimate,
   onComplete,
   onEdit,
   onDelete,
@@ -395,6 +790,7 @@ function GoalCard({
   savings: number;
   funded: boolean;
   progress: number;
+  estimate?: GoalEstimate;
   onComplete: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -408,8 +804,13 @@ function GoalCard({
     <div className="flex flex-col gap-5 rounded-3xl bg-white/6 p-4">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center text-[#b9d0ff]">
-          <GoalIcon iconKey={goal.iconKey} className="size-6" />
+        <span
+          className={cn(
+            "flex shrink-0 items-center justify-center overflow-hidden text-[#b9d0ff]",
+            goal.imageId ? "size-12 rounded-2xl bg-white/8" : "size-10",
+          )}
+        >
+          <GoalThumb goal={goal} className="size-full" iconClassName="size-6" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -425,7 +826,10 @@ function GoalCard({
               </span>
             )}
           </div>
-          <p className="text-xs tabular-nums text-white/50">{formatCurrency(goal.targetAmount)} goal</p>
+          <p className="flex flex-wrap items-center gap-x-2 text-xs tabular-nums text-white/50">
+            <span>{formatCurrency(goal.targetAmount)} goal</span>
+            <PriceDeltaBadge delta={goalPriceDelta(goal)} />
+          </p>
         </div>
         <div className="flex shrink-0 gap-1.5 self-start">
           <RowIconButton aria-label={`Edit ${goal.label}`} onClick={onEdit} className={SUBTLE_ICON_BUTTON}>
@@ -436,6 +840,8 @@ function GoalCard({
           </RowIconButton>
         </div>
       </div>
+
+      {goal.links && goal.links.length > 0 && <GoalLinks links={goal.links} />}
 
       {/* Progress */}
       <div className="flex flex-col gap-2.5" aria-label={`${percent}% saved towards ${goal.label}`}>
@@ -450,10 +856,11 @@ function GoalCard({
             <span className="ml-1 text-lg text-white/50">%</span>
           </p>
           <p className="pb-0.5 text-xs tabular-nums text-white/50">
-            {funded ? "Ready to buy" : `${formatCurrency(saved)} saved`}
+            {funded ? "Ready to buy" : `${formatCurrency(goal.targetAmount - saved)} left`}
           </p>
         </div>
         <TickProgress progress={progress} funded={funded} />
+        {estimate && estimate.kind !== "ready" && <EstimateLine estimate={estimate} />}
       </div>
 
       {/* Action: solid pale blue once affordable, a quiet outline until then. */}

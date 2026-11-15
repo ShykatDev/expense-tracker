@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowUpRight, Pencil, Trash2 } from "lucide-react";
 import * as React from "react";
 import { createElement } from "react";
 
+import { useAccounts } from "@/components/accounts/accounts-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -128,6 +129,16 @@ export function TransactionHistory({
   );
 }
 
+/**
+ * The account an entry went through, by name — but only once there is more
+ * than one account; with just Cash it would be noise on every row.
+ */
+function useAccountLabel(transaction: Transaction | null) {
+  const { hasMultipleAccounts, getAccount } = useAccounts();
+  if (!transaction || !hasMultipleAccounts) return null;
+  return getAccount(transaction.accountId).name;
+}
+
 function TransactionRow({
   transaction,
   customCategories,
@@ -139,13 +150,14 @@ function TransactionRow({
 }) {
   const isIncome = transaction.type === "income";
   const time = formatTime(transaction.createdAt);
+  const accountLabel = useAccountLabel(transaction);
 
   return (
     <button
       type="button"
       onClick={onSelect}
       className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/4 active:bg-white/6"
-      aria-label={`${transaction.category}, ${isIncome ? "income" : "expense"} ${formatCurrency(transaction.amount)}. Show actions`}
+      aria-label={`${transaction.category}, ${isIncome ? "income" : "expense"} ${formatCurrency(transaction.amount)}${transaction.note ? `, ${transaction.note}` : ""}. Show actions`}
     >
       <span
         className={cn(
@@ -161,9 +173,13 @@ function TransactionRow({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm text-white">{transaction.category}</span>
-        <span className="block text-xs text-white/50">
+        {transaction.note && (
+          <span className="block truncate text-xs text-white/65">{transaction.note}</span>
+        )}
+        <span className="block truncate text-xs text-white/50">
           {isIncome ? "Income" : "Expense"}
           {time && ` · ${time}`}
+          {accountLabel && ` · ${accountLabel}`}
         </span>
       </span>
       <span
@@ -198,6 +214,7 @@ function TransactionSheet({
 
   const isIncome = shown?.type === "income";
   const TypeIcon = isIncome ? ArrowUpRight : ArrowDownRight;
+  const accountLabel = useAccountLabel(shown);
 
   return (
     <Dialog open={transaction !== null} onOpenChange={onOpenChange}>
@@ -232,6 +249,13 @@ function TransactionSheet({
                 })}
                 {formatTime(shown.createdAt) && ` · ${formatTime(shown.createdAt)}`}
               </DialogDescription>
+              {(shown.note || accountLabel) && (
+                <p className="max-w-full text-sm text-white/70 wrap-break-word">
+                  {shown.note}
+                  {shown.note && accountLabel && " · "}
+                  {accountLabel && <span className="text-white/50">{accountLabel}</span>}
+                </p>
+              )}
             </DialogHeader>
 
             <DialogFooter>

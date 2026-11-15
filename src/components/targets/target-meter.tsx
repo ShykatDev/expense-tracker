@@ -5,7 +5,7 @@ export interface TargetState {
   percent: number;
   isOver: boolean;
   isReached: boolean;
-  /** A heads-up from 85% of the cap, before it is hit. */
+  /** A heads-up from 80% of the cap, before it is hit (matches the budget alerts). */
   isNear: boolean;
 }
 
@@ -14,7 +14,7 @@ export function getTargetState(spent: number, cap: number): TargetState {
   const percent = cap > 0 ? Math.round((spent / cap) * 100) : 0;
   const isOver = cap > 0 && spent > cap;
   const isReached = cap > 0 && !isOver && spent >= cap;
-  return { percent, isOver, isReached, isNear: !isOver && !isReached && percent >= 85 };
+  return { percent, isOver, isReached, isNear: !isOver && !isReached && percent >= 80 };
 }
 
 /**

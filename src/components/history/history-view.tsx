@@ -65,7 +65,12 @@ export function HistoryView() {
     return transactions
       .filter((t) => type === "all" || t.type === type)
       .filter((t) => isWithinDateRange(t.createdAt, period, monthAnchor))
-      .filter((t) => !needle || t.category.toLowerCase().includes(needle))
+      .filter(
+        (t) =>
+          !needle ||
+          t.category.toLowerCase().includes(needle) ||
+          (t.note?.toLowerCase().includes(needle) ?? false),
+      )
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [transactions, type, period, monthAnchor, query]);
 
@@ -111,7 +116,7 @@ export function HistoryView() {
                     setQuery(event.target.value);
                     resetPaging();
                   }}
-                  placeholder="Search by category"
+                  placeholder="Search category or note"
                   aria-label="Search transactions"
                   className="h-12 w-full rounded-full bg-white/6 pr-11 pl-11 text-sm text-white outline-none placeholder:text-white/50 focus:ring-1 focus:ring-white/20"
                 />
