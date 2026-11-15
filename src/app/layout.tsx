@@ -9,6 +9,7 @@ import { AppToaster } from "@/components/brand/app-toaster";
 import { InstallPromptCapture } from "@/lib/install-prompt";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { isRemoteData } from "@/server/data-mode";
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
@@ -99,6 +100,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         </QueryProvider>
         <AppToaster />
         <InstallPromptCapture />
+        {/* Page views for Vercel Web Analytics; does nothing outside Vercel. */}
+        <Analytics />
       </body>
     </html>
   );
