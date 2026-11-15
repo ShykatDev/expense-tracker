@@ -17,6 +17,7 @@ import Link from "next/link";
 import * as React from "react";
 
 import { AccountsSection } from "@/components/accounts/accounts-section";
+import { AccountCard } from "@/components/auth/account-card";
 import { useAccounts } from "@/components/accounts/accounts-provider";
 import { useCategories } from "@/components/categories/categories-provider";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
@@ -60,7 +61,7 @@ function clearAllData() {
   for (const key of keys) window.localStorage.removeItem(key);
 }
 
-export function SettingsView() {
+export function SettingsView({ authEnabled = false }: { authEnabled?: boolean }) {
   const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { goals } = useGoals();
@@ -125,6 +126,9 @@ export function SettingsView() {
           </AppHero>
         }
         peek={() => (
+          // The signed-in account first, then what's stored.
+          <div className="flex flex-col gap-10">
+            {authEnabled && <AccountCard />}
             <SheetSection
               title="Your data"
               subtitle="Everything is kept in this browser only — nothing is uploaded"
@@ -151,6 +155,7 @@ export function SettingsView() {
                 ))}
               </Card>
             </SheetSection>
+          </div>
         )}
         details={
           <>

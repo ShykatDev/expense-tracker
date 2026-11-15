@@ -91,6 +91,26 @@ npm run lint
 
 To use it as an app, open it on your phone and choose **Add to Home Screen**.
 
+## Sign-in and database (in progress)
+
+The app is moving from browser storage to **Neon Postgres** (via **Drizzle**), with **Google sign-in** through **Better Auth**. Server code runs as Vercel Functions in the same deployment; there's no separate backend to host.
+
+Step 1 is in place: the schema, migrations, Google sign-in, a `/sign-in` page and a sign-in gate. The screens still read and write browser storage until the next steps move each data type to the database. Until the variables below are set, the gate stays open and the app works as before.
+
+**Setup**
+1. **Neon:** in Vercel, open your project → **Storage** → **Create** → **Neon**. This sets `DATABASE_URL` in Vercel.
+2. **Google:** in Google Cloud Console → **APIs & Services** → **Credentials**, create an **OAuth client ID** (Web application) with these redirect URIs:
+   - `http://localhost:3000/api/auth/callback/google`
+   - `https://<your-vercel-domain>/api/auth/callback/google`
+3. **Local env:** copy `.env.example` to `.env.local` and fill in `DATABASE_URL`, `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Add the same values (with your production `BETTER_AUTH_URL`) in Vercel → **Settings** → **Environment Variables**.
+4. **Tables:** run `npm run db:migrate` to create the tables in Neon.
+
+| Script | What it does |
+| --- | --- |
+| `npm run db:generate` | Writes a new SQL migration to `drizzle/` after you change `src/db/schema.ts` |
+| `npm run db:migrate` | Applies pending migrations to the database in `DATABASE_URL` |
+| `npm run db:studio` | Opens a browser view of the database |
+
 ## Project structure
 
 ```
@@ -107,7 +127,10 @@ src/
     layout/           # App shell, bottom nav, expandable sheet
     ui/               # Shared UI primitives
   hooks/              # localStorage-backed state (transactions, goals, …)
+  db/                 # Drizzle schema and Neon client
   lib/                # Domain logic: savings, targets, goals, goal photos, accounts,
-                      # recurring, budget alerts, monthly recap
+                      # recurring, budget alerts, monthly recap; auth (server + client)
+  proxy.ts            # Sign-in gate (Next.js 16 "proxy", formerly middleware)
+drizzle/              # Generated SQL migrations
 mobile/               # Work-in-progress Flutter port (see mobile/README.md)
 ```
