@@ -9,6 +9,7 @@ import { useAccounts } from "@/components/accounts/accounts-provider";
 import { useCategories } from "@/components/categories/categories-provider";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { useTargets } from "@/components/targets/targets-provider";
+import { SheetToggle } from "@/components/layout/app-shell";
 import { AccountSheet } from "@/components/transaction/account-sheet";
 import { CategorySheet } from "@/components/transaction/category-sheet";
 import { DateStrip } from "@/components/transaction/date-strip";
@@ -284,7 +285,7 @@ export function TransactionEntry() {
   return (
     <div
       data-transaction-entry
-      className="reveal-target mx-auto flex min-h-dvh w-full max-w-[430px] flex-col bg-white text-neutral-900"
+      className="reveal-target mx-auto flex min-h-dvh w-full flex-col bg-white md:max-w-[430px] text-neutral-900"
     >
       {/* Type toggle, with a quiet way out on the left. */}
       <header className="relative flex items-center justify-center px-5 pt-[max(1.75rem,calc(env(safe-area-inset-top)+1.25rem))]">
@@ -297,24 +298,13 @@ export function TransactionEntry() {
           <X className="size-5" strokeWidth={1.75} />
         </button>
 
-        <div className="flex items-center gap-1" role="group" aria-label="Transaction type">
-          {TYPE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => handleTypeChange(option.value)}
-              aria-pressed={type === option.value}
-              className={cn(
-                "rounded-full border-[1.5px] px-4 py-1.5 text-[15px] transition-colors duration-200",
-                type === option.value
-                  ? "border-neutral-900 text-neutral-900"
-                  : "border-transparent text-neutral-900 hover:text-neutral-500",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <SheetToggle
+          tone="light"
+          label="Transaction type"
+          value={type}
+          onChange={handleTypeChange}
+          options={TYPE_OPTIONS}
+        />
       </header>
 
       <div className="px-3 pt-6">

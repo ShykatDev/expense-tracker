@@ -129,13 +129,20 @@ export function SheetSection({
   );
 }
 
-/** The pill-style segmented toggle used inside the sheet. */
+/**
+ * The pill-style segmented toggle used inside the sheet (and, in its light
+ * tone, on the white entry screen). The outline is one element that slides
+ * and resizes to the selected option, rather than each option drawing its
+ * own border, so switching animates from one pill to the other.
+ */
 export function SheetToggle<T extends string>({
   value,
   options,
   onChange,
   label,
   compact = false,
+  tone = "dark",
+  className,
 }: {
   value: T;
   options: { value: T; label: string }[];
@@ -143,30 +150,80 @@ export function SheetToggle<T extends string>({
   label: string;
   /** Tighter pills, for sharing a row with another control. */
   compact?: boolean;
+  /** "light" for white surfaces: dark text and outline. */
+  tone?: "dark" | "light";
+  className?: string;
 }) {
+  const groupRef = React.useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = React.useState<{ left: number; width: number } | null>(null);
+  // No slide on the first placement, only on changes after it.
+  const [animate, setAnimate] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    const measure = () => {
+      const active = group.querySelector<HTMLElement>('[aria-pressed="true"]');
+      setIndicator(active ? { left: active.offsetLeft, width: active.offsetWidth } : null);
+    };
+    measure();
+    // Fonts loading or the container resizing changes the pills' widths.
+    const observer = new ResizeObserver(measure);
+    observer.observe(group);
+    return () => observer.disconnect();
+  }, [value]);
+
+  React.useEffect(() => {
+    if (!indicator || animate) return;
+    const frame = requestAnimationFrame(() => setAnimate(true));
+    return () => cancelAnimationFrame(frame);
+  }, [indicator, animate]);
+
+  const light = tone === "light";
+
   return (
     <div
+      ref={groupRef}
       role="group"
       aria-label={label}
-      className={cn("flex shrink-0 items-center", compact ? "gap-0" : "gap-1")}
+      className={cn("relative flex shrink-0 items-center", compact ? "gap-0" : "gap-1", className)}
     >
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          aria-pressed={value === option.value}
+      {indicator && (
+        <span
+          aria-hidden="true"
           className={cn(
-            "rounded-full border-[1.5px] py-1.5 lowercase whitespace-nowrap transition-colors duration-200",
-            compact ? "px-3 text-[13px]" : "px-4 text-sm",
-            value === option.value
-              ? "border-white text-white"
-              : "border-transparent text-white/50 hover:text-white",
+            "pointer-events-none absolute inset-y-0 left-0 rounded-full border-[1.5px] motion-reduce:transition-none",
+            light ? "border-neutral-900" : "border-white",
+            animate && "transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
           )}
-        >
-          {option.label}
-        </button>
-      ))}
+          style={{ width: indicator.width, transform: `translateX(${indicator.left}px)` }}
+        />
+      )}
+      {options.map((option) => {
+        const selected = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            aria-pressed={selected}
+            className={cn(
+              // A transparent border keeps each pill the same size as the outline.
+              "relative rounded-full border-[1.5px] border-transparent py-1.5 lowercase whitespace-nowrap transition-colors duration-200",
+              compact ? "px-3 text-[13px]" : light ? "px-4 text-[15px]" : "px-4 text-sm",
+              light
+                ? selected
+                  ? "text-neutral-900"
+                  : "text-neutral-900 hover:text-neutral-500"
+                : selected
+                  ? "text-white"
+                  : "text-white/50 hover:text-white",
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

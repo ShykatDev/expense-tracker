@@ -38,6 +38,7 @@ import {
 } from "@/lib/recurring";
 import { formatCurrency } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 /** Roughly what a rule costs (or brings in) per month, for the group totals. */
 function monthlyEquivalent(rule: RecurringRule) {
@@ -149,15 +150,10 @@ function RecurringRuleCard({
                 : "No upcoming date"}
           </p>
           {!rule.paused && next && (
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/8" aria-hidden="true">
-              <div
-                className={cn(
-                  "h-full rounded-full",
-                  overdue ? "bg-amber-300" : income ? "bg-[#dfe8ff]" : "bg-[#7fa3ec]",
-                )}
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
+            <ProgressBar
+              value={progress}
+              tone={overdue ? "amber" : income ? "pale" : "blue"}
+            />
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">

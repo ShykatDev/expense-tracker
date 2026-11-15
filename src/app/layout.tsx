@@ -8,7 +8,7 @@ import { TargetsProvider } from "@/components/targets/targets-provider";
 import { AppToaster } from "@/components/brand/app-toaster";
 import { InstallPromptCapture } from "@/lib/install-prompt";
 import { QueryProvider } from "@/components/providers/query-provider";
-import { isAuthConfigured } from "@/lib/auth";
+import { isRemoteData } from "@/server/data-mode";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
@@ -60,7 +60,10 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Neon once sign-in is configured, unless the visitor chose "Skip for now".
+  const remote = await isRemoteData();
+
   return (
     <html
       lang="en"
@@ -80,14 +83,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <div className="absolute bottom-0 left-1/4 size-80 rounded-full bg-white/6 blur-2xl" />
         </div>
         <QueryProvider>
-        <CategoriesProvider remote={isAuthConfigured()}>
-          {/* Data lives in Neon once Google sign-in is configured. */}
-          <TransactionsProvider remote={isAuthConfigured()}>
+        <CategoriesProvider remote={remote}>
+          {/* Data lives in Neon for signed-in users; guests keep it in the browser. */}
+          <TransactionsProvider remote={remote}>
             <SplashScreen />
-            <AccountsProvider remote={isAuthConfigured()}>
-              <TargetsProvider remote={isAuthConfigured()}>
-                <GoalsProvider remote={isAuthConfigured()}>
-                  <RecurringProvider remote={isAuthConfigured()}>{children}</RecurringProvider>
+            <AccountsProvider remote={remote}>
+              <TargetsProvider remote={remote}>
+                <GoalsProvider remote={remote}>
+                  <RecurringProvider remote={remote}>{children}</RecurringProvider>
                 </GoalsProvider>
               </TargetsProvider>
             </AccountsProvider>

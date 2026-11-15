@@ -473,28 +473,6 @@ html.app-loading .reveal-nav {
   }
 }
 
-/* Goal progress: the last filled tick's halo breathes (opacity only). */
-@keyframes tick-glow {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.tick-glow {
-  animation: tick-glow 2.4s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tick-glow {
-    animation: none;
-    opacity: 0.8;
-  }
-}
-
 /*
  * An affordable goal's "Got …" button invites the tap: every few seconds a
  * light streak sweeps across it and its check badge bounces. Transform-only,

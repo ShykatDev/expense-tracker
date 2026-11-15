@@ -1,6 +1,8 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { GUEST_COOKIE } from "@/lib/guest";
+
 /**
  * Sends signed-out visitors to /sign-in before any page renders.
  *
@@ -8,6 +10,10 @@ import { NextResponse, type NextRequest } from "next/server";
  * The real check happens on the server wherever data is read or written
  * (server actions verify the session with Better Auth), so a forged cookie
  * gets an empty app, never someone's data.
+ *
+ * Guests who chose "Skip for now" (the GUEST_COOKIE) are let in too; their
+ * data stays in the browser, and /sign-in stays open to them so they can
+ * sign in later.
  *
  * Until the sign-in secrets are configured (see .env.example) the gate stays
  * open, so the app keeps working locally while the backend is being set up.
@@ -21,9 +27,10 @@ export function proxy(request: NextRequest) {
   if (!configured) return NextResponse.next();
 
   const signedIn = Boolean(getSessionCookie(request));
+  const guest = request.cookies.has(GUEST_COOKIE);
   const onSignIn = request.nextUrl.pathname === "/sign-in";
 
-  if (!signedIn && !onSignIn) {
+  if (!signedIn && !guest && !onSignIn) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
   if (signedIn && onSignIn) {

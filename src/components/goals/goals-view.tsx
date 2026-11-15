@@ -68,6 +68,7 @@ import {
 import { computeSavings } from "@/lib/savings";
 import { cn } from "@/lib/utils";
 import { formatCurrency, isWithinDateRange } from "@/lib/transactions";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 export function GoalsView() {
   const {
@@ -716,58 +717,6 @@ function PriceHistory({ goal }: { goal: Goal }) {
   );
 }
 
-/** Linear blend between two "#rrggbb" colours. */
-function mixHex(from: string, to: string, t: number) {
-  const f = parseInt(from.slice(1), 16);
-  const g = parseInt(to.slice(1), 16);
-  const channel = (shift: number) =>
-    Math.round(((f >> shift) & 255) + (((g >> shift) & 255) - ((f >> shift) & 255)) * t);
-  return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`;
-}
-
-/**
- * Goal progress as a row of fine ticks. Filled ticks stand taller and run as
- * one gradient, deep navy to the hero's blue (pale blue once affordable),
- * and the last filled tick glows softly — a radial halo that breathes with
- * an opacity-only animation, so it stays cheap on mobile.
- */
-function TickProgress({ progress, funded }: { progress: number; funded: boolean }) {
-  const TICKS = 56;
-  const filled = Math.round(progress * TICKS);
-  const start = "#16306d";
-  const end = funded ? "#dfe8ff" : "#7fa3ec";
-
-  return (
-    <div className="flex h-5 items-center justify-between" aria-hidden="true">
-      {Array.from({ length: TICKS }, (_, i) => {
-        const isFilled = i < filled;
-        const isLast = isFilled && i === filled - 1;
-        const color = isFilled ? mixHex(start, end, filled > 1 ? i / (filled - 1) : 1) : undefined;
-        return (
-          <span key={i} className="relative flex h-full w-[2.5px] items-center justify-center">
-            {isLast && (
-              <span
-                className="tick-glow pointer-events-none absolute size-6 rounded-full"
-                style={{
-                  background: `radial-gradient(circle, ${funded ? "rgba(223,232,255,0.55)" : "rgba(127,163,236,0.6)"} 0%, rgba(127,163,236,0) 70%)`,
-                }}
-              />
-            )}
-            <span
-              className={cn(
-                "relative w-full rounded-full transition-[height,background-color] duration-500",
-                isFilled ? "h-4" : "h-2.5 bg-white/12",
-                isLast && "h-5",
-              )}
-              style={{ backgroundColor: color, transitionDelay: `${i * 8}ms` }}
-            />
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
 /**
  * One active goal. A header with the icon tile, name, price and a deadline
  * chip; the progress as a large percentage with what's saved, over a
@@ -859,7 +808,7 @@ function GoalCard({
             {funded ? "Ready to buy" : `${formatCurrency(goal.targetAmount - saved)} left`}
           </p>
         </div>
-        <TickProgress progress={progress} funded={funded} />
+        <ProgressBar value={progress} tone={funded ? "pale" : "blue"} />
         {estimate && estimate.kind !== "ready" && <EstimateLine estimate={estimate} />}
       </div>
 

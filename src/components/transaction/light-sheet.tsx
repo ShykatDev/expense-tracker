@@ -56,7 +56,7 @@ export function LightSheet({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          "absolute inset-x-0 bottom-0 mx-auto flex max-h-[80dvh] max-w-md flex-col rounded-t-[2rem] bg-white text-neutral-900 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.25)] outline-none",
+          "absolute inset-x-0 bottom-0 mx-auto flex max-h-[80dvh] flex-col rounded-t-[2rem] md:max-w-md bg-white text-neutral-900 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.25)] outline-none",
           "pb-[max(1.25rem,env(safe-area-inset-bottom))] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
           open ? "translate-y-0" : "translate-y-full",
         )}

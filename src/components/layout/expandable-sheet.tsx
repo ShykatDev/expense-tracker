@@ -18,6 +18,19 @@ const HERO_OVERLAP = 28;
 /** A flick faster than this (px per ms) decides the direction on its own. */
 const FLICK = 0.45;
 const SNAP = "520ms cubic-bezier(0.22, 1, 0.36, 1)";
+const SNAP_MS = 520;
+
+type SheetControls = {
+  /** Opens the sheet, then scrolls the element with this id into view. */
+  reveal: (id: string) => void;
+};
+
+const SheetControlsContext = React.createContext<SheetControls | null>(null);
+
+/** Lets content inside an `ExpandableSheet` open it and jump to a section. */
+export function useSheetControls() {
+  return React.useContext(SheetControlsContext);
+}
 
 /**
  * The two-state layout every app page shares.
@@ -87,6 +100,31 @@ export function ExpandableSheet({
       apply(next ? 0 : collapsedOffsetRef.current, true);
     },
     [apply],
+  );
+
+  const controls = React.useMemo<SheetControls>(
+    () => ({
+      reveal(id) {
+        const wasExpanded = expandedRef.current;
+        if (!wasExpanded) snapTo(true);
+        // Wait for the snap, so the scroller is scrollable and laid out.
+        window.setTimeout(
+          () => {
+            const scroller = scrollerRef.current;
+            const target = document.getElementById(id);
+            if (!scroller || !target) return;
+            const top =
+              target.getBoundingClientRect().top -
+              scroller.getBoundingClientRect().top +
+              scroller.scrollTop -
+              16;
+            scroller.scrollTo({ top, behavior: "smooth" });
+          },
+          wasExpanded ? 0 : SNAP_MS,
+        );
+      },
+    }),
+    [snapTo],
   );
 
   // Work out where "collapsed" is from the hero's height, and keep it right
@@ -212,6 +250,7 @@ export function ExpandableSheet({
   }, [snapTo]);
 
   return (
+    <SheetControlsContext.Provider value={controls}>
     <div
       ref={rootRef}
       className="reveal-target relative h-dvh overflow-hidden overscroll-none bg-black md:h-[calc(100dvh-3rem)] md:rounded-[2rem] md:border md:border-white/10"
@@ -287,5 +326,6 @@ export function ExpandableSheet({
         </div>
       </div>
     </div>
+    </SheetControlsContext.Provider>
   );
 }

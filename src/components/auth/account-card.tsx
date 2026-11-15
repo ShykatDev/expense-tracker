@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
+import Link from "next/link";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
@@ -9,10 +10,18 @@ import { GoogleLogo } from "@/components/auth/google-logo";
 import { signOut, useSession } from "@/lib/auth-client";
 
 /**
- * The signed-in Google account, with sign out. Rendered only when sign-in is
- * configured, so the app still works before the backend is set up.
+ * The "Sign-in & sync" block in Settings (not "Account", which would read
+ * like the money Accounts block below it). Always shown:
+ * - signed in: the Google account, with sign out;
+ * - signed out (a guest who skipped sign-in): a button to sign in;
+ * - sign-in not configured on this server yet: the same row, with the
+ *   button disabled, and no session request (there is no auth backend).
  */
-export function AccountCard() {
+export function AccountCard({ authEnabled }: { authEnabled: boolean }) {
+  return authEnabled ? <SessionAccountCard /> : <UnavailableAccountCard />;
+}
+
+function SessionAccountCard() {
   const { data, isPending } = useSession();
   const [signingOut, setSigningOut] = React.useState(false);
   const user = data?.user;
@@ -30,44 +39,27 @@ export function AccountCard() {
   }
 
   return (
-    <SheetSection title="Account">
-      {/* Not the shared Card: it treats a leading <img> as a cover photo
-          (no top padding, square corners), which squashed the avatar. */}
-      <div className="flex items-center gap-3.5 rounded-3xl bg-white/6 p-4">
-        <span className="relative shrink-0">
-          {isPending ? (
-            <span className="block size-12 animate-pulse rounded-full bg-white/8" />
-          ) : user?.image ? (
-            // eslint-disable-next-line @next/next/no-img-element -- Google avatar URL
-            <img
-              src={user.image}
-              alt=""
-              referrerPolicy="no-referrer"
-              className="block size-12 rounded-full object-cover ring-2 ring-white/10"
-            />
-          ) : (
-            <span className="flex size-12 items-center justify-center rounded-full bg-[#b9d0ff]/15 text-lg font-semibold text-[#dfe8ff] ring-2 ring-white/10">
-              {user?.name?.[0]?.toUpperCase() ?? "?"}
-            </span>
-          )}
-          {/* Which provider this account is signed in with. */}
-          {user && (
-            <span className="absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full bg-white ring-2 ring-[#141518]">
-              <GoogleLogo className="size-3" />
-            </span>
-          )}
-        </span>
-
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-medium text-white">
-            {isPending ? "Loading…" : (user?.name ?? "Not signed in")}
-          </span>
-          <span className="block truncate text-xs text-white/50">
-            {user?.email ?? (isPending ? "" : "Sign in to sync your data")}
-          </span>
-        </span>
-
-        {user && (
+    <AccountRow
+      avatar={
+        isPending ? (
+          <span className="block size-12 animate-pulse rounded-full bg-white/8" />
+        ) : user?.image ? (
+          // eslint-disable-next-line @next/next/no-img-element -- Google avatar URL
+          <img
+            src={user.image}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="block size-12 rounded-full object-cover ring-2 ring-white/10"
+          />
+        ) : (
+          <InitialAvatar letter={user?.name?.[0]?.toUpperCase() ?? "?"} />
+        )
+      }
+      showGoogleBadge={Boolean(user)}
+      title={isPending ? "Loading…" : (user?.name ?? "Not signed in")}
+      subtitle={user?.email ?? (isPending ? "" : "Sign in to sync your data across devices")}
+      action={
+        user ? (
           <button
             type="button"
             onClick={handleSignOut}
@@ -78,7 +70,79 @@ export function AccountCard() {
             <LogOut className="size-3.5" />
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
-        )}
+        ) : isPending ? null : (
+          <Link href="/sign-in" className={SIGN_IN_CLASS}>
+            <LogIn className="size-3.5" />
+            Sign in
+          </Link>
+        )
+      }
+    />
+  );
+}
+
+function UnavailableAccountCard() {
+  return (
+    <AccountRow
+      avatar={<InitialAvatar letter="?" />}
+      showGoogleBadge={false}
+      title="Not signed in"
+      subtitle="Sign-in isn’t set up on this server yet"
+      action={
+        <button type="button" disabled className={SIGN_IN_CLASS}>
+          <LogIn className="size-3.5" />
+          Sign in
+        </button>
+      }
+    />
+  );
+}
+
+const SIGN_IN_CLASS =
+  "flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 text-xs font-medium text-neutral-900 transition-transform active:scale-95 disabled:pointer-events-none disabled:opacity-40";
+
+function InitialAvatar({ letter }: { letter: string }) {
+  return (
+    <span className="flex size-12 items-center justify-center rounded-full bg-[#b9d0ff]/15 text-lg font-semibold text-[#dfe8ff] ring-2 ring-white/10">
+      {letter}
+    </span>
+  );
+}
+
+function AccountRow({
+  avatar,
+  showGoogleBadge,
+  title,
+  subtitle,
+  action,
+}: {
+  avatar: React.ReactNode;
+  showGoogleBadge: boolean;
+  title: string;
+  subtitle: string;
+  action: React.ReactNode;
+}) {
+  return (
+    <SheetSection title="Sign-in & sync">
+      {/* Not the shared Card: it treats a leading <img> as a cover photo
+          (no top padding, square corners), which squashed the avatar. */}
+      <div className="flex items-center gap-3.5 rounded-3xl bg-white/6 p-4">
+        <span className="relative shrink-0">
+          {avatar}
+          {/* Which provider this account is signed in with. */}
+          {showGoogleBadge && (
+            <span className="absolute -right-0.5 -bottom-0.5 flex size-5 items-center justify-center rounded-full bg-white ring-2 ring-[#141518]">
+              <GoogleLogo className="size-3" />
+            </span>
+          )}
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-medium text-white">{title}</span>
+          <span className="block truncate text-xs text-white/50">{subtitle}</span>
+        </span>
+
+        {action}
       </div>
     </SheetSection>
   );

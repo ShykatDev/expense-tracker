@@ -24,7 +24,7 @@ import { useCategories } from "@/components/categories/categories-provider";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { useGoals } from "@/components/goals/goals-provider";
 import { useRecurring } from "@/components/recurring/recurring-provider";
-import { ExpandableSheet } from "@/components/layout/expandable-sheet";
+import { ExpandableSheet, useSheetControls } from "@/components/layout/expandable-sheet";
 import {
   AppHero,
   SheetSection,
@@ -68,7 +68,15 @@ function clearAllData() {
   for (const key of keys) window.localStorage.removeItem(key);
 }
 
-export function SettingsView({ authEnabled = false }: { authEnabled?: boolean }) {
+export function SettingsView({
+  authEnabled = false,
+  synced = false,
+}: {
+  /** Google sign-in is configured, so the account card can sign in. */
+  authEnabled?: boolean;
+  /** Data lives in Neon (signed in, not a guest who skipped sign-in). */
+  synced?: boolean;
+}) {
   const { transactions } = useTransactions();
   const { categories } = useCategories();
   const { goals } = useGoals();
@@ -81,12 +89,14 @@ export function SettingsView({ authEnabled = false }: { authEnabled?: boolean })
 
   const customCategoryCount = categories.income.length + categories.expense.length;
 
-  const rows = [
-    { label: "Transactions", count: transactions.length, icon: Receipt },
-    { label: "Custom categories", count: customCategoryCount, icon: Tags },
-    { label: "Monthly targets", count: targets.length, icon: Target },
-    { label: "Goals", count: goals.length, icon: Goal },
-    { label: "Accounts", count: accounts.length, icon: Wallet },
+  // Each row opens where that data is managed. Accounts live further down
+  // this page, so that row opens the sheet and scrolls to them instead.
+  const rows: DataRow[] = [
+    { label: "Transactions", count: transactions.length, icon: Receipt, href: "/history" },
+    { label: "Custom categories", count: customCategoryCount, icon: Tags, href: "/categories" },
+    { label: "Monthly targets", count: targets.length, icon: Target, href: "/categories" },
+    { label: "Goals", count: goals.length, icon: Goal, href: "/goals" },
+    { label: "Accounts", count: accounts.length, icon: Wallet, sectionId: ACCOUNTS_SECTION_ID },
   ];
 
   const [reloading, setReloading] = React.useState(false);
@@ -108,7 +118,7 @@ export function SettingsView({ authEnabled = false }: { authEnabled?: boolean })
     setResetting(true);
     // Synced data lives on the server: clear it there first, and stop if that
     // fails so the local copy isn't wiped while the account still has data.
-    if (authEnabled) {
+    if (synced) {
       try {
         // Goals before anything else they might reference; the rest in parallel.
         await deleteAllGoalsAction();
@@ -157,42 +167,24 @@ export function SettingsView({ authEnabled = false }: { authEnabled?: boolean })
         peek={() => (
           // The signed-in account first, then what's stored.
           <div className="flex flex-col gap-10">
-            {authEnabled && <AccountCard />}
+            <AccountCard authEnabled={authEnabled} />
             <SheetSection
               title="Your data"
               subtitle={
-                authEnabled
+                synced
                   ? "Synced to your Google account. Goal photos stay on this device for now."
                   : "Everything is kept in this browser only — nothing is uploaded"
               }
             >
-              <Card className="gap-0 py-1">
-                {rows.map((row, index) => (
-                  <div
-                    key={row.label}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-3",
-                      index !== rows.length - 1 && "border-b border-white/6",
-                    )}
-                  >
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
-                      <row.icon className="size-4 text-white" />
-                    </div>
-                    <span className="min-w-0 flex-1 truncate text-sm text-white/80">
-                      {row.label}
-                    </span>
-                    <span className="text-sm font-medium tabular-nums text-white">
-                      {row.count}
-                    </span>
-                  </div>
-                ))}
-              </Card>
+              <DataRows rows={rows} />
             </SheetSection>
           </div>
         )}
         details={
           <>
-            <AccountsSection />
+            <div id={ACCOUNTS_SECTION_ID}>
+              <AccountsSection />
+            </div>
 
             <SheetSection title="Recurring">
               <Card className="gap-0 py-1">
@@ -323,5 +315,56 @@ export function SettingsView({ authEnabled = false }: { authEnabled?: boolean })
 
       <InstallGuideDialog open={installOpen} onOpenChange={setInstallOpen} />
     </>
+  );
+}
+
+const ACCOUNTS_SECTION_ID = "settings-accounts";
+
+type DataRow = {
+  label: string;
+  count: number;
+  icon: React.ComponentType<{ className?: string }>;
+} & ({ href: string; sectionId?: never } | { sectionId: string; href?: never });
+
+/**
+ * The "Your data" list. Its own component so it can reach the sheet it sits
+ * in (to jump to a section further down this page).
+ */
+function DataRows({ rows }: { rows: DataRow[] }) {
+  const sheet = useSheetControls();
+  const rowClass =
+    "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/4 active:bg-white/6";
+
+  return (
+    <Card className="gap-0 overflow-hidden py-1">
+      {rows.map((row, index) => {
+        const content = (
+          <>
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
+              <row.icon className="size-4 text-white" />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm text-white/80">{row.label}</span>
+            <span className="text-sm font-medium tabular-nums text-white">{row.count}</span>
+            <ChevronRight className="size-4 shrink-0 text-white/30" />
+          </>
+        );
+        const className = cn(rowClass, index !== rows.length - 1 && "border-b border-white/6");
+
+        return row.href ? (
+          <Link key={row.label} href={row.href} className={className}>
+            {content}
+          </Link>
+        ) : (
+          <button
+            key={row.label}
+            type="button"
+            onClick={() => sheet?.reveal(row.sectionId!)}
+            className={className}
+          >
+            {content}
+          </button>
+        );
+      })}
+    </Card>
   );
 }

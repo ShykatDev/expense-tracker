@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 export interface TargetState {
   /** Real share of the cap spent, uncapped, so "130%" reads honestly. */
@@ -25,21 +26,12 @@ export function TargetMeter({ state }: { state: TargetState }) {
   const { percent, isOver, isReached, isNear } = state;
   return (
     <div className="flex items-center gap-3">
-      <div className={cn("h-2 flex-1 overflow-hidden rounded-full", isOver ? "bg-rose-500/15" : "bg-white/8")}>
-        <div
-          className={cn(
-            "h-full rounded-full transition-[width,background-color] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            isOver
-              ? "bg-linear-to-r from-rose-500/70 to-rose-400"
-              : isReached
-                ? "bg-emerald-400/60"
-                : isNear
-                  ? "bg-linear-to-r from-amber-500/60 to-amber-300/90"
-                  : "accent-gradient-x",
-          )}
-          style={{ width: `${Math.min(Math.max(percent, percent > 0 ? 3 : 0), 100)}%` }}
-        />
-      </div>
+      <ProgressBar
+        className="flex-1"
+        value={percent / 100}
+        minVisible={0.03}
+        tone={isOver ? "rose" : isReached ? "emerald" : isNear ? "amber" : "blue"}
+      />
       <span
         className={cn(
           "w-10 shrink-0 text-right text-[11px] tabular-nums",

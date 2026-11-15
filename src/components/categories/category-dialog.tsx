@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
 import { IconPicker } from "@/components/categories/icon-picker";
+import { SheetToggle } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -84,29 +85,16 @@ export function CategoryDialog({
         {/* min-w-0: the dialog is a grid; keep content within the sheet. */}
         <div className="flex min-w-0 flex-col gap-5">
           {/* Type, as on the entry screen. */}
-          <div className="flex items-center justify-center gap-1" role="group" aria-label="Category type">
-            {(
-              [
-                { value: "expense", label: "expenses" },
-                { value: "income", label: "income" },
-              ] as const
-            ).map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setCategoryType(option.value)}
-                aria-pressed={categoryType === option.value}
-                className={cn(
-                  "rounded-full border-[1.5px] px-4 py-1.5 text-sm transition-colors",
-                  categoryType === option.value
-                    ? "border-white text-white"
-                    : "border-transparent text-white/50 hover:text-white",
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <SheetToggle
+            label="Category type"
+            value={categoryType}
+            onChange={setCategoryType}
+            options={[
+              { value: "expense", label: "expenses" },
+              { value: "income", label: "income" },
+            ]}
+            className="self-center"
+          />
 
           {/* A live preview of the chip, exactly as the entry screen shows it. */}
           <div className="flex flex-col items-center gap-2 rounded-3xl bg-white/[0.04] px-4 py-5">

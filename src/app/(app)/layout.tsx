@@ -8,8 +8,10 @@ import { BottomNav } from "@/components/layout/bottom-nav";
  * scrolls. Pages scroll inside `AppScroller`, which keeps the fixed bottom
  * navigation steady on mobile (no toolbar collapse, no page bounce).
  *
- * Inside, a phone-width column (430px max, the width of a large phone) holds each page's own hero and sheet (see
+ * Inside, a column holds each page's own hero and sheet (see
  * `ExpandableSheet`), alongside the shared month state and the navigation.
+ * Below `md` the column fills the screen; from `md` up it is capped at
+ * phone width (430px) and centred.
  */
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
@@ -17,7 +19,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       <BalanceSummaryProvider>
         <MonthNavProvider>
           <AppScroller>
-            <div className="mx-auto flex min-h-full w-full max-w-[430px] flex-col md:py-6">
+            <div className="mx-auto flex min-h-full w-full flex-col md:max-w-[430px] md:py-6">
               {children}
             </div>
           </AppScroller>

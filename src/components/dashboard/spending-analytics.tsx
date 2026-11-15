@@ -12,6 +12,7 @@ import {
   type Transaction,
 } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 export type AnalyticsRange = "daily" | "weekly" | "monthly";
 
@@ -567,15 +568,12 @@ export function SpentCategories({
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/8">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                          isTop ? "accent-gradient-x" : "bg-white/25",
-                        )}
-                        style={{ width: `${Math.max(share * 100, 2)}%` }}
-                      />
-                    </div>
+                    <ProgressBar
+                      className="flex-1"
+                      value={share}
+                      minVisible={0.02}
+                      tone={isTop ? "blue" : "muted"}
+                    />
                     <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-white/50">
                       {Math.round(share * 100)}%
                     </span>

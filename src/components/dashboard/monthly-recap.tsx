@@ -13,6 +13,7 @@ import {
 } from "@/lib/monthly-recap";
 import { formatCurrency, type Transaction } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
+import { ProgressBar } from "@/components/ui/progress-bar";
 
 function parseDismissed(raw: string) {
   const value: unknown = JSON.parse(raw);
@@ -110,15 +111,11 @@ export function MonthlyRecap({ transactions }: { transactions: Transaction[] }) 
                     {formatCurrency(row.total)}
                   </span>
                 </div>
-                <div className="h-1 overflow-hidden rounded-full bg-white/8">
-                  <div
-                    className={cn(
-                      "h-full rounded-full",
-                      index === 0 ? "accent-gradient-x" : "bg-white/25",
-                    )}
-                    style={{ width: `${Math.max(row.share * 100, 3)}%` }}
-                  />
-                </div>
+                <ProgressBar
+                  value={row.share}
+                  minVisible={0.03}
+                  tone={index === 0 ? "blue" : "muted"}
+                />
               </li>
             ))}
           </ol>
