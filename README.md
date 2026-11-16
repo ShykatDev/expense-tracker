@@ -1,109 +1,170 @@
 # Pulse — Expense Tracker
 
-Pulse is a personal finance app for your phone. It tracks income and spending, sets monthly budgets per category, and shows how close your savings are to the things you want to buy.
+Pulse is a personal finance app for your phone. It tracks income and spending across your accounts (Cash, bKash, banks), sets monthly spending limits per category, handles recurring bills and salary, and shows how close your savings are to the things you want to buy.
 
-It's a web app you can install on your home screen (PWA). Everything is stored **on your device only**: there's no account, no server and no sync.
+It's a web app you install on your home screen (PWA). **Sign in with Google** and your data syncs across your devices, and it keeps working **offline**. Or **skip sign-in** and keep everything on the device.
+
+<p align="center">
+  <img src="docs/screenshots/home.png" width="250" alt="Home: this month's savings, income and expense, and a spending chart" />
+  &nbsp;
+  <img src="docs/screenshots/add-expense.png" width="250" alt="Adding an expense with the phone's number keyboard" />
+  &nbsp;
+  <img src="docs/screenshots/goals.png" width="250" alt="Goals with progress, price change and an estimated date" />
+</p>
 
 ## Features
 
-### Home dashboard
-- **Savings hero**: this month's savings, your savings rate, and the change from last month.
-- **Savings verdict**: a short summary of the month, such as *Excellent saver*, *On track*, *A little tight* or *Overspending*.
-- **Income / expense / balance** shown in one compact strip.
-- **Spending analytics**: bar charts by day (last 7 days), by week (last 6 weeks) or by month (last 6 months), compared with the period before.
-- **Recurring due**: rent, salary or bills waiting to be confirmed, each with one-tap confirm or skip.
-- **Monthly recap** (first week of each month, dismissible): last month's savings, top 3 categories, biggest expense, change from the month before, and goals completed.
-- **Budget alerts**: categories at 80% or more of their monthly target.
-- **Spending calendar**: a month grid shaded by how much you spent each day. Tap a day to see its total.
-- **Budget targets**: how much of each category's monthly cap you've used.
-- **Recent transactions**, with a link to the full history.
-- A **month picker** to look back at any earlier month.
+### Home
 
-### Adding a transaction
-- A screen built around a keypad: type the amount, pick a category, done.
-- Switch between **expense** and **income**.
-- A date strip for logging past entries.
-- An optional **note** on each entry (up to 80 characters). History search matches notes too.
-- **Quick re-add**: chips for your last few category + amount pairs. Tap one to fill the form, then confirm.
-- An **account** picker (Cash, bKash, bank, …), shown once you have more than one account.
-- A toast when a save pushes a category past **80%** or **100%** of its monthly target.
+<table>
+  <tr>
+    <td width="260"><img src="docs/screenshots/home-details.png" width="250" alt="Home details: account balances, spending by category and the spending calendar" /></td>
+    <td>
+
+- **Savings hero**: this month's savings, a short verdict (*Excellent saver*, *On track*, *Overspending*…) and income vs. expense.
+- **Spending chart** by day, week or month, compared with the period before.
+- **Accounts**: the balance of each account (Cash, bKash, bank…), shown once you have more than one.
+- **Spent by category**: one compact list with a share bar per category; small ones fold into "Other".
+- **Spending calendar**: each day shaded by how much you spent.
+- **Recurring due**, **budget alerts** (categories at 80%+ of their limit) and a **monthly recap** in the first week of each month.
+- **Today**: what you've added today; History has the rest.
+- A **month picker** to look back at earlier months.
+
+</td>
+  </tr>
+</table>
+
+### Adding income or expenses
+
+<table>
+  <tr>
+    <td width="260"><img src="docs/screenshots/add-expense.png" width="250" alt="The entry screen" /></td>
+    <td>
+
+- Type the amount with the **phone's own number keyboard**, then pick a category.
+- Switch between **expense** and **income**, and backdate with the date strip.
+- Optional **note** and **account**.
+- **Quick re-add** chips for your recent category + amount pairs.
+- The **Add** button stays just above the keyboard.
+- A toast when a save pushes a category past **80%** or **100%** of its monthly limit.
+
+</td>
+  </tr>
+</table>
 
 ### History
-- Every transaction you've recorded, with search and filters (all / expenses / income).
-- The totals at the top follow the filters, so it doubles as a quick *"how much did I spend on X?"* calculator.
 
-### Categories
-- Built-in categories for income and expenses, plus **custom categories** with your own name and icon.
-- **Show/hide** any category so the entry screen lists only the ones you use.
-- **Monthly targets**: set a spending cap for any expense category. A change applies from the current month on; earlier months keep their old cap.
+<table>
+  <tr>
+    <td width="260"><img src="docs/screenshots/history.png" width="250" alt="History with the filter panel open" /></td>
+    <td>
 
-### Recurring transactions
-- Set up rent, salary, subscriptions or bills once: monthly (on a set day), weekly or yearly.
-- Each occurrence shows up as **due** on Home and on the Recurring page (Settings → Recurring). Nothing is added until you confirm it. You can change the amount before confirming, or skip it.
-- Missed months show up as separate overdue items. Rules can be paused; resuming doesn't bring back the months you were paused.
+- Every entry, searchable by **category, note or amount** (e.g. "1,200").
+- **Filters**: expense/income, date range, account, category and an amount range.
+- The totals at the top follow the filters, so it doubles as a *"how much did I spend on X?"* calculator.
+- Tap an entry to edit it. Deleting shows an **Undo** toast instead of a confirmation.
+
+</td>
+  </tr>
+</table>
 
 ### Goals
-A goal is something you're saving up for, such as a PS5 or AirPods.
-- **Priority**: tap **Reorder** and drag goals into order. Higher-priority goals are assumed to be bought first.
-- **Estimate**: "At this pace: Mar 2027", based on your average monthly savings over recent complete months, counting the goals ahead of it.
-- **Price changes**: editing the price keeps the old one. Cards show "↓ ৳5,000 since added", and completed goals show the full price history.
-- Each goal has a **target price**, an **icon**, an optional **target date** (with a "days left" badge) and an optional **photo**.
-- **Storage check**: the goal dialog shows how much device storage is free, how many photos are stored and their total size, and the size of the photo you just picked. The line turns amber below 20 MB free, so you know when to skip the photo.
-- **Product links**: save up to 5 links per goal (store pages, for example). Cards show just the site name (e.g. `daraz.com.bd ↗`), not the full URL.
-- **Progress** is measured against this month's savings: the percentage saved, the amount still **left**, and a progress bar.
-- Goals you can afford move to the top and their **"Got it"** button lights up.
-- **Completing a goal**: say whether you *bought it with your savings* (recorded as an expense, so your savings go down) or *it was a gift* (nothing is recorded). Completed goals can be reopened.
 
-### Settings
-- Counts of everything stored on the device.
-- **Accounts**: Cash plus your own (bKash, Nagad, bank, card), each with an opening balance and a live balance. **Transfers** move money between accounts without counting as income or spending. Deleting an account moves its entries to Cash.
-- A link to the **Recurring** page.
-- **Reload app**: picks up a new version in the installed app, which has no browser reload button.
-- **Reset all data**: wipes transactions, categories, targets, goals and goal photos. You have to type a word to confirm.
+<table>
+  <tr>
+    <td width="260"><img src="docs/screenshots/goals.png" width="250" alt="Goals" /></td>
+    <td>
 
-## Where data is stored
+Something you're saving up for, like a PS5 or AirPods.
 
-| Data | Storage |
-| --- | --- |
-| Transactions, categories, targets, goals, accounts, transfers, recurring rules | `localStorage` (keys starting with `expense-tracker:`) |
-| Goal photos | IndexedDB (`expense-tracker-media`), resized to at most 900px JPEG (~100 KB) |
+- A **target price**, **icon**, optional **target date**, **photo** and **product links** (cards show just the site name).
+- **Progress** against this month's savings: % saved and the amount left.
+- **Priority**: drag goals into order, and each shows an **"At this pace"** date.
+- **Price changes** are kept, e.g. "↓ ৳4,000 since added".
+- **Completing**: bought with savings (recorded as an expense) or a gift. Completed goals open a details sheet and can be reopened.
 
-Savings are never stored separately. They're always calculated from the transactions (income − expenses), so they can't drift out of sync. Clearing the browser's site data deletes everything, so treat the device as the only copy.
+</td>
+  </tr>
+</table>
+
+### Recurring
+
+<table>
+  <tr>
+    <td width="260"><img src="docs/screenshots/recurring.png" width="250" alt="Recurring rules and what's due" /></td>
+    <td>
+
+- Set up rent, salary, subscriptions or bills once: monthly, weekly or yearly, in **three short steps** (what, how much, when).
+- Each occurrence shows up as **due**. Nothing is added until you **confirm** it, and you can change the amount or **skip** it.
+- Cards show when the next one is due, with a bar that fills as it gets close, grouped into bills and income with monthly totals.
+- Rules can be paused; missed months show as separate overdue items.
+
+</td>
+  </tr>
+</table>
+
+### Settings and sign-in
+
+<table>
+  <tr>
+    <td width="260"><img src="docs/screenshots/settings.png" width="250" alt="Settings" /></td>
+    <td width="260"><img src="docs/screenshots/sign-in.png" width="250" alt="Sign-in with Google" /></td>
+  </tr>
+</table>
+
+- **Sign in with Google** (no passwords), or **Skip for now** to use the app as a guest, with data only on this device. Signing in later uploads what you saved as a guest.
+- **Accounts**: Cash plus your own (bKash, Nagad, Rocket, banks, cards) with **real provider logos**, opening balances and live balances. **Transfers** move money between accounts without counting as income or spending.
+- **Categories**: built-in plus custom ones (name and icon), show/hide, and **monthly limits** per category.
+- **Install app**: a step-by-step guide for iPhone and Android.
+- **Reset all data**, and **Delete my account**, which removes your account and everything synced to it.
+
+## Sync and offline
+
+| | Signed in | Guest (skipped sign-in) |
+| --- | --- | --- |
+| Where data lives | Neon Postgres, tied to your Google account | This browser (`localStorage`) |
+| Other devices | Synced | — |
+| Offline | Works: changes are queued on the phone and sent when you're back online | Works (nothing to sync) |
+| Goal photos | On the device (IndexedDB) for now | On the device (IndexedDB) |
+
+- **Instant**: every change shows immediately and saves in the background. It's only undone if the server rejects it.
+- **Offline queue**: changes made with no signal are kept on the phone, even if you close the app, and sent in order when the connection returns. A small cloud icon beside the logo shows how many are waiting.
+- **Opens offline**: a service worker caches the app, and your last-loaded data is shown straight away.
+- **Undo**: deleting an entry, goal, recurring rule or limit shows **Undo** for a few seconds.
+
+Savings are never stored; they're always calculated from your transactions (income − expenses).
 
 ## Tech stack
 
-- [Next.js](https://nextjs.org) 16 (App Router) + React 19 + TypeScript
-- Tailwind CSS 4, with UI primitives from shadcn / Base UI
-- Recharts for charts, lucide-react for icons
+- [Next.js](https://nextjs.org) 16 (App Router) + React 19 + TypeScript, deployed on Vercel
+- Tailwind CSS 4, UI primitives from shadcn / Base UI, Recharts, lucide-react
+- [Neon](https://neon.tech) Postgres via [Drizzle ORM](https://orm.drizzle.team); server actions for writes, route handlers for reads
+- [Better Auth](https://www.better-auth.com) with Google sign-in
+- TanStack Query (optimistic updates, cached data), a custom offline outbox and a service worker
 - Installable PWA (web app manifest and generated icons)
 
-> **Note:** this project uses a recent Next.js with breaking changes. Check `node_modules/next/dist/docs/` before relying on older Next.js conventions (see `AGENTS.md`).
+> **Note:** this project uses a recent Next.js with breaking changes (e.g. `proxy.ts` instead of `middleware.ts`). Check `node_modules/next/dist/docs/` before relying on older conventions (see `AGENTS.md`).
 
 ## Getting started
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm run build    # production build
+npm run build    # production build (the service worker only runs here)
 npm run start    # serve the production build
 npm run lint
 ```
 
-To use it as an app, open it on your phone and choose **Add to Home Screen**.
+Without the environment variables below, sign-in is off and the app runs fully in the browser.
 
-## Sign-in and database
+### Sign-in and database setup
 
-The app is moving from browser storage to **Neon Postgres** (via **Drizzle**), with **Google sign-in** through **Better Auth**. Server code runs as Vercel Functions in the same deployment; there's no separate backend to host.
-
-When you're signed in, **all your data is stored in Neon and syncs across devices**: transactions, accounts and transfers, categories, monthly targets, goals and goal completions, and recurring rules. Anything saved in a browser before signing in is uploaded once, automatically. Goal photos still stay on the device until they move to Vercel Blob. Until the variables below are set, the gate stays open and everything stays in the browser as before.
-
-**Setup**
 1. **Neon:** in Vercel, open your project → **Storage** → **Create** → **Neon**. This sets `DATABASE_URL` in Vercel.
-2. **Google:** in Google Cloud Console → **APIs & Services** → **Credentials**, create an **OAuth client ID** (Web application) with these redirect URIs:
+2. **Google:** in Google Cloud Console, create an **OAuth client ID** (Web application) with these redirect URIs:
    - `http://localhost:3000/api/auth/callback/google`
    - `https://<your-vercel-domain>/api/auth/callback/google`
-3. **Local env:** copy `.env.example` to `.env.local` and fill in `DATABASE_URL`, `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Add the same values (with your production `BETTER_AUTH_URL`) in Vercel → **Settings** → **Environment Variables**.
-4. **Tables:** run `npm run db:migrate` to create the tables in Neon.
+3. **Local env:** copy `.env.example` to `.env.local` and fill in `DATABASE_URL`, `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Add the same values in Vercel → **Settings** → **Environment Variables**, with `BETTER_AUTH_URL` set to your production domain.
+4. **Tables:** `npm run db:migrate`.
 
 | Script | What it does |
 | --- | --- |
@@ -116,21 +177,18 @@ When you're signed in, **all your data is stored in Neon and syncs across device
 ```
 src/
   app/
-    (app)/            # Main pages: home, history, goals, categories, settings, recurring
-    (entry)/          # Full-screen transaction entry
-    manifest.ts       # PWA manifest
-    icons/            # Generated app icons
-  components/
-    dashboard/        # Home page sections
-    transaction/      # Entry screen, keypad, category picker
-    history/  goals/  categories/  targets/  settings/  accounts/  recurring/
-    layout/           # App shell, bottom nav, expandable sheet
-    ui/               # Shared UI primitives
-  hooks/              # localStorage-backed state (transactions, goals, …)
+    (app)/            # Home, history, goals, categories, recurring, settings
+    (entry)/          # Full-screen income/expense entry
+    sign-in/          # Google sign-in and "Skip for now"
+    actions/          # Server actions (writes), one file per data area
+    api/              # Better Auth endpoints and data read routes
+  components/         # UI by area: dashboard, goals, recurring, accounts, settings, …
+  hooks/              # Local (browser) and remote (Neon) data hooks per area
   db/                 # Drizzle schema and Neon client
-  lib/                # Domain logic: savings, targets, goals, goal photos, accounts,
-                      # recurring, budget alerts, monthly recap; auth (server + client)
+  server/             # Server-only data access, validation and session checks
+  lib/                # Domain logic; offline outbox and queued actions (lib/offline)
   proxy.ts            # Sign-in gate (Next.js 16 "proxy", formerly middleware)
-drizzle/              # Generated SQL migrations
-mobile/               # Work-in-progress Flutter port (see mobile/README.md)
+public/sw.js          # Service worker
+drizzle/              # SQL migrations
+docs/screenshots/     # Images used in this README
 ```
