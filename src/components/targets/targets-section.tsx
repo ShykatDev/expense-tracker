@@ -55,6 +55,11 @@ export function TargetsSection() {
   } = useTargets();
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  /**
+   * Bumped every time the form opens, so it remounts empty: nothing from
+   * the last submission (or a cancelled draft) is left in it.
+   */
+  const [formKey, setFormKey] = React.useState(0);
   const [editing, setEditing] = React.useState<CategoryTarget | null>(null);
   const [deleting, setDeleting] = React.useState<CategoryTarget | null>(null);
 
@@ -155,6 +160,7 @@ export function TargetsSection() {
           onClick={() => {
             setEditing(null);
             setDialogOpen(true);
+            setFormKey((key) => key + 1);
           }}
         >
           <Plus />
@@ -223,6 +229,7 @@ export function TargetsSection() {
                       onClick={() => {
                         setEditing(row.target);
                         setDialogOpen(true);
+                        setFormKey((key) => key + 1);
                       }}
                     >
                       <Pencil />
@@ -258,7 +265,7 @@ export function TargetsSection() {
       )}
 
       <TargetDialog
-        key={editing?.categoryKey ?? "create"}
+        key={`${editing?.categoryKey ?? "create"}-${formKey}`}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={editing ? "edit" : "create"}

@@ -86,6 +86,11 @@ export function GoalsView() {
   const { monthAnchor } = useMonthNav();
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  /**
+   * Bumped every time the form opens, so it remounts empty: nothing from
+   * the last submission (or a cancelled draft) is left in it.
+   */
+  const [formKey, setFormKey] = React.useState(0);
   const [editing, setEditing] = React.useState<Goal | null>(null);
   const [deleting, setDeleting] = React.useState<Goal | null>(null);
   const [completing, setCompleting] = React.useState<Goal | null>(null);
@@ -146,6 +151,7 @@ export function GoalsView() {
   function openCreate() {
     setEditing(null);
     setDialogOpen(true);
+    setFormKey((key) => key + 1);
   }
 
   async function handleSubmit({ image, ...input }: GoalDialogInput) {
@@ -304,6 +310,7 @@ export function GoalsView() {
                       onEdit={() => {
                         setEditing(row.goal);
                         setDialogOpen(true);
+                        setFormKey((key) => key + 1);
                       }}
                       onDelete={() => setDeleting(row.goal)}
                     />
@@ -387,7 +394,7 @@ export function GoalsView() {
       />
 
       <GoalDialog
-        key={editing?.id ?? "create"}
+        key={`${editing?.id ?? "create"}-${formKey}`}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={editing ? "edit" : "create"}

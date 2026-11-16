@@ -193,6 +193,11 @@ export function RecurringView() {
     useRecurring();
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  /**
+   * Bumped every time the form opens, so it remounts empty: nothing from
+   * the last submission (or a cancelled draft) is left in it.
+   */
+  const [formKey, setFormKey] = React.useState(0);
   const [editing, setEditing] = React.useState<RecurringRule | null>(null);
   const [deleting, setDeleting] = React.useState<RecurringRule | null>(null);
 
@@ -248,6 +253,7 @@ export function RecurringView() {
   function openCreate() {
     setEditing(null);
     setDialogOpen(true);
+    setFormKey((key) => key + 1);
   }
 
   function handleSubmit(input: RecurringRuleInput) {
@@ -344,6 +350,7 @@ export function RecurringView() {
                             onEdit={() => {
                               setEditing(rule);
                               setDialogOpen(true);
+                              setFormKey((key) => key + 1);
                             }}
                             onTogglePause={() => {
                               setPaused(rule.id, !rule.paused);
@@ -365,7 +372,7 @@ export function RecurringView() {
       />
 
       <RecurringRuleDialog
-        key={editing?.id ?? "create"}
+        key={`${editing?.id ?? "create"}-${formKey}`}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         initial={editing ?? undefined}
