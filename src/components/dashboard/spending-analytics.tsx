@@ -510,25 +510,71 @@ function RangeTabs({
  * the selected month, largest first, each with its share of the month's
  * spending drawn as a thin bar. The biggest category gets the accent colour.
  */
-/**
- * Categorical colours for the top categories, in fixed order (validated for
- * colour-blind separation and contrast on the app's dark surface). Anything
- * past them folds into a neutral "Other", never a generated fifth hue.
- */
-const CATEGORY_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500"];
-const OTHER_COLOR = "#6b6e76";
+/** One ranked row: name, share and amount, with a thin share bar under it. */
+function CategoryShareRow({
+  label,
+  value,
+  share,
+  tone,
+  small = false,
+}: {
+  label: string;
+  value: number;
+  /** Fraction of the month's spending, 0–1. */
+  share: number;
+  tone: "top" | "normal" | "other";
+  small?: boolean;
+}) {
+  return (
+    <div className={cn("flex flex-col gap-1.5", small ? "py-1.5" : "py-2")}>
+      <div className="flex items-baseline gap-3">
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate text-left",
+            small ? "text-[13px] text-white/65" : "text-sm text-white/85",
+          )}
+        >
+          {label}
+        </span>
+        <span className="shrink-0 text-xs tabular-nums text-white/45">{Math.max(1, Math.round(share * 100))}%</span>
+        <span
+          className={cn(
+            "w-20 shrink-0 text-right tabular-nums",
+            small ? "text-[13px] text-white/75" : "text-sm font-medium text-white",
+          )}
+        >
+          {formatCurrency(value)}
+        </span>
+      </div>
+      <div className="h-1 overflow-hidden rounded-full bg-white/8" aria-hidden="true">
+        <div
+          className={cn(
+            "h-full rounded-full",
+            tone === "top" ? "bg-[#7fa3ec]" : tone === "normal" ? "bg-[#7fa3ec]/45" : "bg-white/25",
+          )}
+          style={{ width: `${Math.max(share * 100, 2)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+
+/** Categories listed before the rest fold into "Other". */
+const TOP_CATEGORIES = 4;
 
 /**
- * Where this month's spending went, compact: one thin segmented bar for the
- * split, and a short list beneath it (colour dot, name, share, amount) that
- * doubles as the bar's legend. The top four categories get their own colour;
- * the rest fold into "Other", which expands to list them.
+ * Where this month's spending went, compact and in one hue: a short ranked
+ * list (name, share, amount) with a thin bar under each row whose length is
+ * that category's share of the month. The largest is the brighter blue; the
+ * rest a softer step of it. Past the top four, categories fold into "Other",
+ * which expands to list them.
  */
 export function SpentCategories({
   transactions,
 }: {
   transactions: Transaction[];
-  /** Kept for callers; the compact list no longer shows category icons. */
+  /** Kept for callers; the compact list doesn't show category icons. */
   customCategories?: CustomCategory[];
 }) {
   const [showAll, setShowAll] = React.useState(false);
@@ -537,23 +583,10 @@ export function SpentCategories({
     [transactions],
   );
   const total = rows.reduce((sum, row) => sum + row.total, 0);
-
-  const top = rows.slice(0, CATEGORY_COLORS.length);
-  const rest = rows.slice(CATEGORY_COLORS.length);
+  const top = rows.slice(0, TOP_CATEGORIES);
+  const rest = rows.slice(TOP_CATEGORIES);
   const restTotal = rest.reduce((sum, row) => sum + row.total, 0);
-  const segments = [
-    ...top.map((row, index) => ({
-      key: row.category,
-      label: row.category,
-      total: row.total,
-      color: CATEGORY_COLORS[index],
-    })),
-    ...(restTotal > 0
-      ? [{ key: "__other", label: `Other (${rest.length})`, total: restTotal, color: OTHER_COLOR }]
-      : []),
-  ];
   const share = (value: number) => (total > 0 ? value / total : 0);
-  const percent = (value: number) => `${Math.max(1, Math.round(share(value) * 100))}%`;
 
   return (
     <section className="flex flex-col gap-3">
@@ -571,84 +604,34 @@ export function SpentCategories({
           Nothing spent this month yet
         </p>
       ) : (
-        <div className="flex flex-col gap-3 rounded-3xl bg-white/6 p-4">
-          {/* Thin segmented bar: widths are each part's share; a 2px gap of
-              the card surface separates neighbours. */}
-          <div
-            role="img"
-            aria-label={segments
-              .map((segment) => `${segment.label} ${formatCurrency(segment.total)} (${percent(segment.total)})`)
-              .join(", ")}
-            className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full"
-          >
-            {segments.map((segment) => (
-              <span
-                key={segment.key}
-                title={`${segment.label} · ${formatCurrency(segment.total)} · ${percent(segment.total)}`}
-                className="h-full min-w-1 first:rounded-l-full last:rounded-r-full"
-                style={{ flexGrow: segment.total, flexBasis: 0, backgroundColor: segment.color }}
-              />
-            ))}
-          </div>
-
-          {/* The legend, with figures: one short row per part. */}
-          <ul className="flex flex-col">
-            {segments.map((segment) => {
-              const isOther = segment.key === "__other";
-              const content = (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className="size-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: segment.color }}
-                  />
-                  <span className="min-w-0 flex-1 truncate text-left text-sm text-white/85">
-                    {segment.label}
-                  </span>
-                  <span className="w-10 shrink-0 text-right text-xs tabular-nums text-white/50">
-                    {percent(segment.total)}
-                  </span>
-                  <span className="w-20 shrink-0 text-right text-sm font-medium tabular-nums text-white">
-                    {formatCurrency(segment.total)}
-                  </span>
-                </>
-              );
-              return (
-                <li key={segment.key}>
-                  {isOther ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowAll((prev) => !prev)}
-                      aria-expanded={showAll}
-                      className="flex h-9 w-full items-center gap-3 rounded-xl transition-colors active:bg-white/4"
-                    >
-                      {content}
-                    </button>
-                  ) : (
-                    <div className="flex h-9 items-center gap-3">{content}</div>
-                  )}
-                  {isOther && showAll && (
-                    <ul className="mb-1 flex flex-col border-l border-white/10 pl-3 ml-1">
-                      {rest.map((row) => (
-                        <li key={row.category} className="flex h-8 items-center gap-3">
-                          <span className="min-w-0 flex-1 truncate text-[13px] text-white/65">
-                            {row.category}
-                          </span>
-                          <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-white/40">
-                            {percent(row.total)}
-                          </span>
-                          <span className="w-20 shrink-0 text-right text-[13px] tabular-nums text-white/75">
-                            {formatCurrency(row.total)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <ul className="flex flex-col rounded-3xl bg-white/6 px-4 py-2">
+          {top.map((row, index) => (
+            <li key={row.category}>
+              <CategoryShareRow label={row.category} value={row.total} share={share(row.total)} tone={index === 0 ? "top" : "normal"} />
+            </li>
+          ))}
+          {restTotal > 0 && (
+            <li>
+              <button
+                type="button"
+                onClick={() => setShowAll((prev) => !prev)}
+                aria-expanded={showAll}
+                className="w-full rounded-xl transition-colors active:bg-white/4"
+              >
+                <CategoryShareRow label={`Other (${rest.length})`} value={restTotal} share={share(restTotal)} tone="other" />
+              </button>
+              {showAll && (
+                <ul className="mb-1 ml-1 border-l border-white/10 pl-3">
+                  {rest.map((row) => (
+                    <li key={row.category}>
+                      <CategoryShareRow label={row.category} value={row.total} share={share(row.total)} tone="other" small />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          )}
+        </ul>
       )}
     </section>
   );
