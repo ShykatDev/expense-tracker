@@ -44,7 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { HoldButton } from "@/components/ui/hold-button";
 import { deleteAllAccountsAction } from "@/app/actions/accounts";
 import { deleteAllCategoriesAction } from "@/app/actions/categories";
 import { deleteAllGoalsAction } from "@/app/actions/goals";
@@ -57,8 +57,6 @@ import { cn } from "@/lib/utils";
 /** Every key this app writes starts with this, so a reset can find them all. */
 const STORAGE_PREFIX = "expense-tracker:";
 
-/** Typed to confirm, so a reset can't happen from a stray tap. */
-const CONFIRM_WORD = "RESET";
 
 function clearAllData() {
   const keys: string[] = [];
@@ -86,7 +84,6 @@ export function SettingsView({
   const { accounts, transfers } = useAccounts();
 
   const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const [confirmText, setConfirmText] = React.useState("");
 
   const customCategoryCount = categories.income.length + categories.expense.length;
 
@@ -115,7 +112,6 @@ export function SettingsView({
   const [resetting, setResetting] = React.useState(false);
 
   async function handleReset() {
-    if (confirmText.trim().toUpperCase() !== CONFIRM_WORD) return;
     setResetting(true);
     // Synced data lives on the server: clear it there first, and stop if that
     // fails so the local copy isn't wiped while the account still has data.
@@ -251,10 +247,7 @@ export function SettingsView({
                 <Button
                   variant="destructive"
                   size="lg"
-                  onClick={() => {
-                    setConfirmText("");
-                    setConfirmOpen(true);
-                  }}
+                  onClick={() => setConfirmOpen(true)}
                 >
                   <Trash2 />
                   Reset all data
@@ -282,33 +275,20 @@ export function SettingsView({
                 `, ${accounts.length - 1} extra ${accounts.length === 2 ? "account" : "accounts"}`}
               {transfers.length > 0 &&
                 ` and ${transfers.length} ${transfers.length === 1 ? "transfer" : "transfers"}`}
-              . Type{" "}
-              <span className="font-semibold text-white">{CONFIRM_WORD}</span> to
-              confirm.
+              . This can&apos;t be undone. Press and hold the button to confirm.
             </DialogDescription>
           </DialogHeader>
 
-          <Input
-            value={confirmText}
-            onChange={(event) => setConfirmText(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") handleReset();
-            }}
-            placeholder={CONFIRM_WORD}
-            autoComplete="off"
-            aria-label={`Type ${CONFIRM_WORD} to confirm`}
-          />
-
           <DialogFooter>
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={handleReset}
-              disabled={resetting || confirmText.trim().toUpperCase() !== CONFIRM_WORD}
+            {/* Hold, not a typed word: hard to trigger by accident, one gesture. */}
+            <HoldButton
+              onConfirm={handleReset}
+              busy={resetting}
+              busyLabel="Deleting…"
+              icon={<Trash2 className="size-4" />}
             >
-              <Trash2 />
-              {resetting ? "Deleting…" : "Delete everything"}
-            </Button>
+              Hold to delete everything
+            </HoldButton>
             <DialogClose render={<Button variant="outline" size="lg" />}>
               Cancel
             </DialogClose>

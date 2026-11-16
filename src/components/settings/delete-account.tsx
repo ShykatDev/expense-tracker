@@ -16,12 +16,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { HoldButton } from "@/components/ui/hold-button";
 import { clearGoalImages } from "@/lib/goal-images";
 import { endGuestMode } from "@/lib/guest";
 import { clearOutbox } from "@/lib/offline/sync";
 
-const CONFIRM_WORD = "DELETE";
 const STORAGE_PREFIX = "expense-tracker:";
 
 /** Everything this app keeps in the browser: data, flags, queue, cache. */
@@ -39,16 +38,13 @@ function clearLocalData() {
 /**
  * "Delete my account", for signed-in users: removes the Google-linked
  * account and every piece of data stored with it, on the server and on this
- * device. Asks for the word DELETE first, since there's no undo.
+ * device. Confirmed by pressing and holding, since there's no undo.
  */
 export function DeleteAccountBlock() {
   const [open, setOpen] = React.useState(false);
-  const [text, setText] = React.useState("");
   const [deleting, setDeleting] = React.useState(false);
-  const confirmed = text.trim().toUpperCase() === CONFIRM_WORD;
 
   async function handleDelete() {
-    if (!confirmed) return;
     setDeleting(true);
     try {
       await deleteMyAccountAction();
@@ -83,10 +79,7 @@ export function DeleteAccountBlock() {
         <Button
           variant="destructive"
           size="lg"
-          onClick={() => {
-            setText("");
-            setOpen(true);
-          }}
+          onClick={() => setOpen(true)}
         >
           <UserX />
           Delete my account
@@ -100,25 +93,18 @@ export function DeleteAccountBlock() {
             <DialogDescription>
               This permanently deletes your account and all of its data: transactions,
               accounts, categories, targets, goals and recurring rules. It can&apos;t be
-              undone. Type <span className="font-semibold text-white">{CONFIRM_WORD}</span>{" "}
-              to confirm.
+              undone. Press and hold the button to confirm.
             </DialogDescription>
           </DialogHeader>
-          <Input
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") void handleDelete();
-            }}
-            placeholder={CONFIRM_WORD}
-            autoComplete="off"
-            aria-label={`Type ${CONFIRM_WORD} to confirm`}
-          />
           <DialogFooter>
-            <Button variant="destructive" size="lg" onClick={handleDelete} disabled={deleting || !confirmed}>
-              <UserX />
-              {deleting ? "Deleting…" : "Delete my account"}
-            </Button>
+            <HoldButton
+              onConfirm={handleDelete}
+              busy={deleting}
+              busyLabel="Deleting…"
+              icon={<UserX className="size-4" />}
+            >
+              Hold to delete my account
+            </HoldButton>
             <DialogClose render={<Button variant="outline" size="lg" disabled={deleting} />}>
               Cancel
             </DialogClose>
