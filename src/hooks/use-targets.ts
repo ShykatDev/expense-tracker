@@ -90,6 +90,16 @@ export function useLocalTargets() {
     [setTargets],
   )
 
+  /** Puts a deleted target back exactly as it was (Undo). */
+  const restoreTarget = React.useCallback(
+    (target: CategoryTarget) => {
+      setTargets((prev) =>
+        prev.some((t) => t.categoryKey === target.categoryKey) ? prev : [...prev, target],
+      )
+    },
+    [setTargets],
+  )
+
   const setTargetOverride = React.useCallback(
     (categoryKey: string, month: string, amount: number | undefined) => {
       setTargets((prev) =>
@@ -116,6 +126,7 @@ export function useLocalTargets() {
     targets,
     upsertTarget,
     removeTarget,
+    restoreTarget,
     setTargetOverride,
     renameTargetLabel,
     isLoaded: true,

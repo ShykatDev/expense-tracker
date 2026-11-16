@@ -87,3 +87,13 @@ export function applyReassign(
     return next;
   });
 }
+
+/**
+ * Puts deleted entries back (Undo) with their ids, skipping any that are
+ * somehow still there. They go to the front, like a new entry: the list is
+ * kept in entry order, and screens sort by date where they need to.
+ */
+export function restoreInto(transactions: Transaction[], rows: Transaction[]) {
+  const ids = new Set(transactions.map((t) => t.id));
+  return [...rows.filter((row) => !ids.has(row.id)), ...transactions];
+}

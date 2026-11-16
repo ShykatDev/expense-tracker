@@ -29,6 +29,7 @@ import {
   AppHero,
   SheetSection,
 } from "@/components/layout/app-shell";
+import { DeleteAccountBlock } from "@/components/settings/delete-account";
 import { InstallGuideDialog } from "@/components/settings/install-guide-dialog";
 import { useTargets } from "@/components/targets/targets-provider";
 import { AnimatedNumber } from "@/components/ui/animated-number";
@@ -259,6 +260,8 @@ export function SettingsView({
                   Reset all data
                 </Button>
               </div>
+              {/* Only for synced users: guests have no account to delete. */}
+              {synced && <DeleteAccountBlock />}
             </SheetSection>
           </>
         }

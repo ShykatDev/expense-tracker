@@ -16,17 +16,7 @@ import { useRecurring } from "@/components/recurring/recurring-provider";
 import { RecurringRuleDialog } from "@/components/recurring/recurring-rule-dialog";
 import { RecurringCategoryIcon } from "@/components/recurring/recurring-shared";
 import { AnimatedNumber } from "@/components/ui/animated-number";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type { RecurringRuleInput } from "@/hooks/use-recurring";
 import {
   formatDueDate,
@@ -37,6 +27,7 @@ import {
   type RecurringRule,
 } from "@/lib/recurring";
 import { formatCurrency } from "@/lib/transactions";
+import { undoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 import { ProgressBar } from "@/components/ui/progress-bar";
 
@@ -189,7 +180,7 @@ function endOfMonth(now: number) {
  * Reads from `RecurringProvider`, which lives in the root layout.
  */
 export function RecurringView() {
-  const { rules, due, now, addRule, updateRule, removeRule, setPaused, isLoaded } =
+  const { rules, due, now, addRule, updateRule, removeRule, restoreRule, setPaused, isLoaded } =
     useRecurring();
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
@@ -199,7 +190,6 @@ export function RecurringView() {
    */
   const [formKey, setFormKey] = React.useState(0);
   const [editing, setEditing] = React.useState<RecurringRule | null>(null);
-  const [deleting, setDeleting] = React.useState<RecurringRule | null>(null);
 
   // Unconfirmed occurrences through the end of this month, overdue included:
   // the money still expected to go out (and come in) before the month ends.
@@ -266,11 +256,10 @@ export function RecurringView() {
     toast.success(`Added ${input.category}`);
   }
 
-  function handleDelete() {
-    if (!deleting) return;
-    removeRule(deleting.id);
-    toast.success(`Deleted ${deleting.category}`);
-    setDeleting(null);
+  /** Deletes at once, with Undo in the toast instead of a confirm dialog. */
+  function handleDelete(rule: RecurringRule) {
+    removeRule(rule.id);
+    undoToast(`Deleted ${rule.category}`, () => restoreRule(rule));
   }
 
   const summary =
@@ -358,7 +347,7 @@ export function RecurringView() {
                                 rule.paused ? `Resumed ${rule.category}` : `Paused ${rule.category}`,
                               );
                             }}
-                            onDelete={() => setDeleting(rule)}
+                            onDelete={() => handleDelete(rule)}
                           />
                         ))}
                       </div>
@@ -379,32 +368,6 @@ export function RecurringView() {
         onSubmit={handleSubmit}
       />
 
-      <Dialog
-        open={deleting !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleting(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete recurring?</DialogTitle>
-            <DialogDescription>
-              {deleting
-                ? `"${deleting.category}" will stop coming up. Entries already confirmed stay in your history.`
-                : "This rule will be removed."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-row">
-            <Button variant="destructive" size="lg" onClick={handleDelete}>
-              <Trash2 className="size-4" />
-              Delete
-            </Button>
-            <DialogClose render={<Button variant="outline" size="lg" />}>
-              Cancel
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

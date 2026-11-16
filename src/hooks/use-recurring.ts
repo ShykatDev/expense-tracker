@@ -66,6 +66,14 @@ export function useLocalRecurringRules() {
     [setRules],
   );
 
+  /** Puts a deleted rule back exactly as it was (Undo). */
+  const restoreRule = React.useCallback(
+    (rule: RecurringRule) => {
+      setRules((prev) => (prev.some((r) => r.id === rule.id) ? prev : [rule, ...prev]));
+    },
+    [setRules],
+  );
+
   /** See `applyPaused`: resuming settles everything before today. */
   const setPaused = React.useCallback(
     (id: string, paused: boolean) => {
@@ -89,6 +97,7 @@ export function useLocalRecurringRules() {
     addRule,
     updateRule,
     removeRule,
+    restoreRule,
     setPaused,
     markOccurrenceHandled,
     isLoaded: true,

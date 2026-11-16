@@ -4,6 +4,7 @@ import { Plus, TrendingDown } from "lucide-react";
 import * as React from "react";
 
 import { AppMark } from "@/components/brand/app-logo";
+import { SyncStatus } from "@/components/layout/sync-status";
 import { MonthPicker } from "@/components/dashboard/navbar";
 import { AnimatedNumber } from "@/components/ui/animated-number";
 import { formatCurrency } from "@/lib/transactions";
@@ -57,6 +58,9 @@ export function AppHero({
         >
           <AppMark className="size-7 text-white" />
         </div>
+
+        {/* Offline / waiting-to-sync note; renders nothing when all synced. */}
+        <SyncStatus className="mr-auto" />
 
         {/* The month picker and "+" are 48px, the same as the bottom nav's
             tabs, and each reaches 4px further (::after) so near-misses

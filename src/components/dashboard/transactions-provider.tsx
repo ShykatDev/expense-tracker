@@ -16,6 +16,8 @@ interface TransactionsContextValue {
   /** New fields (note, accountId) are optional, so older callers keep working. */
   addTransactions: (entries: NewTransaction[]) => Transaction[];
   removeTransaction: (id: string) => void;
+  /** Puts deleted entries back exactly as they were (Undo). */
+  restoreTransactions: (rows: Transaction[]) => void;
   updateTransaction: (
     id: string,
     patch: TransactionPatch,
@@ -42,6 +44,7 @@ function useContextValue(state: TransactionsState): TransactionsContextValue {
     transactions,
     addTransactions,
     removeTransaction,
+    restoreTransactions,
     updateTransaction,
     renameCategory,
     reassignAccount,
@@ -52,6 +55,7 @@ function useContextValue(state: TransactionsState): TransactionsContextValue {
       transactions,
       addTransactions,
       removeTransaction,
+      restoreTransactions,
       updateTransaction,
       renameTransactionCategory: renameCategory,
       reassignTransactionAccount: reassignAccount,
@@ -61,6 +65,7 @@ function useContextValue(state: TransactionsState): TransactionsContextValue {
       transactions,
       addTransactions,
       removeTransaction,
+      restoreTransactions,
       updateTransaction,
       renameCategory,
       reassignAccount,

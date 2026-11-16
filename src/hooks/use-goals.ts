@@ -95,6 +95,18 @@ export function useLocalGoals() {
     [setGoals, setCompletions],
   )
 
+  /** Puts a deleted goal and its completion records back as they were (Undo). */
+  const restoreGoal = React.useCallback(
+    (goal: Goal, goalCompletions: GoalCompletion[]) => {
+      setGoals((prev) => (prev.some((g) => g.id === goal.id) ? prev : [...prev, goal]))
+      setCompletions((prev) => [
+        ...goalCompletions.filter((c) => !prev.some((p) => p.id === c.id)),
+        ...prev,
+      ])
+    },
+    [setGoals, setCompletions],
+  )
+
   /**
    * Marks a goal as completed and records how it was fulfilled, so the
    * history can show where the money went.
@@ -125,6 +137,7 @@ export function useLocalGoals() {
     updateGoal,
     reorderGoals,
     removeGoal,
+    restoreGoal,
     completeGoal,
     reopenGoal,
     isLoaded: true,

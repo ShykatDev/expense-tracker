@@ -4,13 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
+import { importCategoriesAction } from "@/app/actions/categories";
 import {
   addCustomCategoryAction,
-  importCategoriesAction,
   removeCustomCategoryAction,
   setCategoryHiddenAction,
   updateCustomCategoryAction,
-} from "@/app/actions/categories";
+} from "@/lib/offline/queued-actions";
+import { afterSync, isOfflineError } from "@/lib/offline/sync";
 import { readLocalHiddenCategories } from "@/hooks/use-category-visibility";
 import { readLocalCustomCategories } from "@/hooks/use-custom-categories";
 import {
@@ -63,8 +64,9 @@ export function useRemoteCategories() {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: CATEGORIES_QUERY_KEY,
-    queryFn: fetchCategories,
-    retry: (count, error) => !(error instanceof SignedOutError) && count < 1,
+    queryFn: () => afterSync(fetchCategories),
+    retry: (count, error) =>
+      !(error instanceof SignedOutError) && !isOfflineError(error) && count < 1,
   });
 
   const categories = query.data?.custom ?? EMPTY.custom;
@@ -82,7 +84,7 @@ export function useRemoteCategories() {
       save().catch(() => {
         queryClient.setQueryData(CATEGORIES_QUERY_KEY, previous);
         void queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
-        toast.error("Couldn’t save that change. Check your connection and try again.");
+        toast.error("That change couldn’t be saved, so it was undone.");
       });
     },
     [queryClient],
@@ -183,7 +185,9 @@ export function useRemoteCategories() {
 
   // A failed first load (not just being signed out) is worth a toast.
   React.useEffect(() => {
-    if (query.isError && !(query.error instanceof SignedOutError)) {
+    if (query.isError &&
+      !(query.error instanceof SignedOutError) &&
+      !isOfflineError(query.error)) {
       toast.error("Couldn’t load your categories. Reopen the app to try again.");
     }
   }, [query.isError, query.error]);

@@ -14,6 +14,8 @@ interface GoalsContextValue {
   updateGoal: GoalsState["updateGoal"];
   reorderGoals: GoalsState["reorderGoals"];
   removeGoal: GoalsState["removeGoal"];
+  /** Puts a deleted goal and its completion records back (Undo). */
+  restoreGoal: GoalsState["restoreGoal"];
   completeGoal: GoalsState["completeGoal"];
   reopenGoal: GoalsState["reopenGoal"];
   isLoaded: boolean;
@@ -52,6 +54,7 @@ function useContextValue(state: GoalsState): GoalsContextValue {
     updateGoal,
     reorderGoals,
     removeGoal,
+    restoreGoal,
     completeGoal,
     reopenGoal,
     isLoaded,
@@ -64,6 +67,7 @@ function useContextValue(state: GoalsState): GoalsContextValue {
       updateGoal,
       reorderGoals,
       removeGoal,
+      restoreGoal,
       completeGoal,
       reopenGoal,
       isLoaded,
@@ -75,6 +79,7 @@ function useContextValue(state: GoalsState): GoalsContextValue {
       updateGoal,
       reorderGoals,
       removeGoal,
+      restoreGoal,
       completeGoal,
       reopenGoal,
       isLoaded,

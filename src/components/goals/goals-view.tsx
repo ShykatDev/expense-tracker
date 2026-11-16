@@ -37,7 +37,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -66,6 +65,7 @@ import {
   type GoalEstimate,
 } from "@/lib/goals";
 import { computeSavings } from "@/lib/savings";
+import { undoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 import { formatCurrency, isWithinDateRange } from "@/lib/transactions";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -78,6 +78,7 @@ export function GoalsView() {
     updateGoal,
     reorderGoals,
     removeGoal,
+    restoreGoal,
     completeGoal,
     reopenGoal,
     isLoaded,
@@ -92,7 +93,6 @@ export function GoalsView() {
    */
   const [formKey, setFormKey] = React.useState(0);
   const [editing, setEditing] = React.useState<Goal | null>(null);
-  const [deleting, setDeleting] = React.useState<Goal | null>(null);
   const [completing, setCompleting] = React.useState<Goal | null>(null);
   /** The completed goal whose details are open. */
   const [viewing, setViewing] = React.useState<Goal | null>(null);
@@ -184,12 +184,18 @@ export function GoalsView() {
     toast.success(`Added ${input.label}`);
   }
 
-  function handleDelete() {
-    if (!deleting) return;
-    removeGoal(deleting.id);
-    if (deleting.imageId) deleteGoalImage(deleting.imageId).catch(() => {});
-    toast.success(`Deleted ${deleting.label}`);
-    setDeleting(null);
+  /**
+   * Deletes at once, with Undo in the toast instead of a confirm dialog. The
+   * goal's photo is only removed once the chance to undo has passed.
+   */
+  function handleDelete(goal: Goal) {
+    const goalCompletions = completions.filter((entry) => entry.goalId === goal.id);
+    removeGoal(goal.id);
+    undoToast(`Deleted ${goal.label}`, () => restoreGoal(goal, goalCompletions), {
+      onExpire: () => {
+        if (goal.imageId) deleteGoalImage(goal.imageId).catch(() => {});
+      },
+    });
   }
 
   function handleComplete(source: GoalCompletionSource) {
@@ -312,7 +318,7 @@ export function GoalsView() {
                         setDialogOpen(true);
                         setFormKey((key) => key + 1);
                       }}
-                      onDelete={() => setDeleting(row.goal)}
+                      onDelete={() => handleDelete(row.goal)}
                     />
                   ))}
                 </div>
@@ -355,7 +361,7 @@ export function GoalsView() {
                           </SheetButton>
                           <RowIconButton
                             aria-label={`Delete ${row.goal.label}`}
-                            onClick={() => setDeleting(row.goal)}
+                            onClick={() => handleDelete(row.goal)}
                             className={SUBTLE_ICON_BUTTON}
                           >
                             <Trash2 />
@@ -389,7 +395,7 @@ export function GoalsView() {
         }}
         onDelete={(goal) => {
           setViewing(null);
-          setDeleting(goal);
+          handleDelete(goal);
         }}
       />
 
@@ -414,32 +420,6 @@ export function GoalsView() {
         onConfirm={handleComplete}
       />
 
-      <Dialog
-        open={deleting !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleting(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete goal?</DialogTitle>
-            <DialogDescription>
-              {deleting
-                ? `"${deleting.label}" will be removed.`
-                : "This goal will be removed."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-row">
-            <Button variant="destructive" size="lg" onClick={handleDelete}>
-              <Trash2 className="size-4" />
-              Delete
-            </Button>
-            <DialogClose render={<Button variant="outline" size="lg" />}>
-              Cancel
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

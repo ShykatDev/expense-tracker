@@ -7,7 +7,9 @@ import { toast } from "@yusufceng1z/ding-react";
 
 import { SheetSection } from "@/components/layout/app-shell";
 import { GoogleLogo } from "@/components/auth/google-logo";
+import { clearQueryCache } from "@/components/providers/query-provider";
 import { signOut, useSession } from "@/lib/auth-client";
+import { clearOutbox, pendingCount } from "@/lib/offline/sync";
 
 /**
  * The "Sign-in & sync" block in Settings (not "Account", which would read
@@ -27,9 +29,22 @@ function SessionAccountCard() {
   const user = data?.user;
 
   async function handleSignOut() {
+    // Changes made offline that haven't reached the server yet would be lost.
+    const waiting = pendingCount();
+    if (
+      waiting > 0 &&
+      !window.confirm(
+        `${waiting} ${waiting === 1 ? "change hasn’t" : "changes haven’t"} synced yet (you may be offline). Signing out now discards ${waiting === 1 ? "it" : "them"}. Sign out anyway?`,
+      )
+    ) {
+      return;
+    }
     setSigningOut(true);
     try {
       await signOut();
+      // The next account on this device starts clean.
+      clearOutbox();
+      clearQueryCache();
       // A full load drops every in-memory provider and lands on /sign-in.
       window.location.replace("/sign-in");
     } catch {

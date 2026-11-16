@@ -15,17 +15,7 @@ import {
 } from "@/components/targets/target-meter";
 import { useTargets } from "@/components/targets/targets-provider";
 import { RowIconButton, SheetButton, SheetSection } from "@/components/layout/app-shell";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { findCategoryByKey, resolveCategories } from "@/lib/categories";
 import {
   monthKey as toMonthKey,
@@ -34,6 +24,7 @@ import {
   type CategoryTarget,
 } from "@/lib/targets";
 import { formatCurrency, isWithinDateRange } from "@/lib/transactions";
+import { undoToast } from "@/lib/undo-toast";
 import { cn } from "@/lib/utils";
 
 function formatMonthLabel(month: string) {
@@ -50,6 +41,7 @@ export function TargetsSection() {
     targets,
     upsertTarget,
     removeTarget,
+    restoreTarget,
     setTargetOverride,
     isLoaded,
   } = useTargets();
@@ -61,7 +53,6 @@ export function TargetsSection() {
    */
   const [formKey, setFormKey] = React.useState(0);
   const [editing, setEditing] = React.useState<CategoryTarget | null>(null);
-  const [deleting, setDeleting] = React.useState<CategoryTarget | null>(null);
 
   const currentMonth = React.useMemo(() => {
     const now = new Date();
@@ -144,11 +135,10 @@ export function TargetsSection() {
     );
   }
 
-  function handleDelete() {
-    if (!deleting) return;
-    removeTarget(deleting.categoryKey);
-    toast.success(`Removed ${deleting.categoryLabel} target`);
-    setDeleting(null);
+  /** Removes at once, with Undo in the toast instead of a confirm dialog. */
+  function handleDelete(target: CategoryTarget) {
+    removeTarget(target.categoryKey);
+    undoToast(`Removed ${target.categoryLabel} limit`, () => restoreTarget(target));
   }
 
   return (
@@ -236,7 +226,7 @@ export function TargetsSection() {
                     </RowIconButton>
                     <RowIconButton
                       aria-label={`Remove ${row.label} target`}
-                      onClick={() => setDeleting(row.target)}
+                      onClick={() => handleDelete(row.target)}
                     >
                       <Trash2 />
                     </RowIconButton>
@@ -283,32 +273,6 @@ export function TargetsSection() {
         onSubmit={handleSubmit}
       />
 
-      <Dialog
-        open={deleting !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleting(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Remove target?</DialogTitle>
-            <DialogDescription>
-              {deleting
-                ? `The monthly target for "${deleting.categoryLabel}" will be removed. Your entries are not affected.`
-                : "The monthly target will be removed."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col sm:flex-row">
-            <Button variant="destructive" size="lg" onClick={handleDelete}>
-              <Trash2 className="size-4" />
-              Remove
-            </Button>
-            <DialogClose render={<Button variant="outline" size="lg" />}>
-              Cancel
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </SheetSection>
   );
 }

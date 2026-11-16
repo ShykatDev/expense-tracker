@@ -8,6 +8,7 @@ import {
   applyRename,
   createTransactions,
   normalizePatch,
+  restoreInto,
 } from "@/lib/transaction-ops"
 import {
   STORAGE_KEY,
@@ -53,6 +54,11 @@ export function useLocalTransactions() {
     setTransactions((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
+  /** Puts deleted entries back exactly as they were (Undo). */
+  const restoreTransactions = React.useCallback((rows: Transaction[]) => {
+    setTransactions((prev) => restoreInto(prev, rows))
+  }, [])
+
   const updateTransaction = React.useCallback((id: string, patch: TransactionPatch) => {
     const normalized = normalizePatch(patch)
     setTransactions((prev) => prev.map((t) => (t.id === id ? applyPatch(t, normalized) : t)))
@@ -76,6 +82,7 @@ export function useLocalTransactions() {
     transactions,
     addTransactions,
     removeTransaction,
+    restoreTransactions,
     updateTransaction,
     renameCategory,
     reassignAccount,

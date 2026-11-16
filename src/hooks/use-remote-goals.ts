@@ -4,15 +4,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
+import { importGoalsAction } from "@/app/actions/goals";
 import {
   addGoalAction,
   completeGoalAction,
-  importGoalsAction,
   removeGoalAction,
+  restoreGoalsAction,
   reopenGoalAction,
   reorderGoalsAction,
   updateGoalAction,
-} from "@/app/actions/goals";
+} from "@/lib/offline/queued-actions";
+import { afterSync, isOfflineError } from "@/lib/offline/sync";
 import {
   applyComplete,
   applyGoalPatch,
@@ -70,8 +72,9 @@ export function useRemoteGoals() {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: GOALS_QUERY_KEY,
-    queryFn: fetchGoals,
-    retry: (count, error) => !(error instanceof SignedOutError) && count < 1,
+    queryFn: () => afterSync(fetchGoals),
+    retry: (count, error) =>
+      !(error instanceof SignedOutError) && !isOfflineError(error) && count < 1,
   });
 
   const goals = query.data?.goals ?? EMPTY_GOALS;
@@ -91,7 +94,7 @@ export function useRemoteGoals() {
       save().catch(() => {
         queryClient.setQueryData(GOALS_QUERY_KEY, previous);
         void queryClient.invalidateQueries({ queryKey: GOALS_QUERY_KEY });
-        toast.error("Couldn’t save that change. Check your connection and try again.");
+        toast.error("That change couldn’t be saved, so it was undone.");
       });
     },
     [queryClient],
@@ -136,6 +139,23 @@ export function useRemoteGoals() {
       optimistic(
         (data) => ({ ...data, goals: applyReorder(data.goals, orderedIds) }),
         () => reorderGoalsAction(orderedIds),
+      );
+    },
+    [optimistic],
+  );
+
+  /** Puts a deleted goal and its completion records back, same ids (Undo). */
+  const restoreGoal = React.useCallback(
+    (goal: Goal, goalCompletions: GoalCompletion[]) => {
+      optimistic(
+        (data) => ({
+          goals: data.goals.some((g) => g.id === goal.id) ? data.goals : [...data.goals, goal],
+          completions: [
+            ...goalCompletions.filter((c) => !data.completions.some((p) => p.id === c.id)),
+            ...data.completions,
+          ],
+        }),
+        () => restoreGoalsAction([goal], goalCompletions),
       );
     },
     [optimistic],
@@ -233,7 +253,9 @@ export function useRemoteGoals() {
 
   // A failed first load (not just being signed out) is worth a toast.
   React.useEffect(() => {
-    if (query.isError && !(query.error instanceof SignedOutError)) {
+    if (query.isError &&
+      !(query.error instanceof SignedOutError) &&
+      !isOfflineError(query.error)) {
       toast.error("Couldn’t load your goals. Reopen the app to try again.");
     }
   }, [query.isError, query.error]);
@@ -245,6 +267,7 @@ export function useRemoteGoals() {
     updateGoal,
     reorderGoals,
     removeGoal,
+    restoreGoal,
     completeGoal,
     reopenGoal,
     isLoaded: !query.isPending,

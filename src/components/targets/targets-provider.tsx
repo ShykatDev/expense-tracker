@@ -10,6 +10,8 @@ interface TargetsContextValue {
   targets: CategoryTarget[];
   upsertTarget: (input: TargetInput) => void;
   removeTarget: (categoryKey: string) => void;
+  /** Puts a deleted target back exactly as it was (Undo). */
+  restoreTarget: (target: CategoryTarget) => void;
   setTargetOverride: (
     categoryKey: string,
     month: string,
@@ -29,6 +31,7 @@ function useContextValue(state: TargetsState): TargetsContextValue {
     targets,
     upsertTarget,
     removeTarget,
+    restoreTarget,
     setTargetOverride,
     renameTargetLabel,
     isLoaded,
@@ -38,6 +41,7 @@ function useContextValue(state: TargetsState): TargetsContextValue {
       targets,
       upsertTarget,
       removeTarget,
+      restoreTarget,
       setTargetOverride,
       renameTargetLabel,
       isLoaded,
@@ -46,6 +50,7 @@ function useContextValue(state: TargetsState): TargetsContextValue {
       targets,
       upsertTarget,
       removeTarget,
+      restoreTarget,
       setTargetOverride,
       renameTargetLabel,
       isLoaded,

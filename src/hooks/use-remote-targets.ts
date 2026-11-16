@@ -4,13 +4,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
+import { importTargetsAction } from "@/app/actions/targets";
 import {
-  importTargetsAction,
   removeTargetAction,
+  restoreTargetsAction,
   renameTargetLabelAction,
   setTargetOverrideAction,
   upsertTargetAction,
-} from "@/app/actions/targets";
+} from "@/lib/offline/queued-actions";
+import { afterSync, isOfflineError } from "@/lib/offline/sync";
 import {
   applyRemoveTarget,
   applyTargetLabel,
@@ -54,8 +56,9 @@ export function useRemoteTargets() {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: TARGETS_QUERY_KEY,
-    queryFn: fetchTargets,
-    retry: (count, error) => !(error instanceof SignedOutError) && count < 1,
+    queryFn: () => afterSync(fetchTargets),
+    retry: (count, error) =>
+      !(error instanceof SignedOutError) && !isOfflineError(error) && count < 1,
   });
 
   const targets = query.data ?? EMPTY;
@@ -72,7 +75,7 @@ export function useRemoteTargets() {
       save().catch(() => {
         queryClient.setQueryData(TARGETS_QUERY_KEY, previous);
         void queryClient.invalidateQueries({ queryKey: TARGETS_QUERY_KEY });
-        toast.error("Couldn’t save that change. Check your connection and try again.");
+        toast.error("That change couldn’t be saved, so it was undone.");
       });
     },
     [queryClient],
@@ -84,6 +87,17 @@ export function useRemoteTargets() {
       optimistic(
         (list) => applyUpsertTarget(list, input, now),
         () => upsertTargetAction(input),
+      );
+    },
+    [optimistic],
+  );
+
+  /** Puts a deleted target back exactly as it was, monthly values included (Undo). */
+  const restoreTarget = React.useCallback(
+    (target: CategoryTarget) => {
+      optimistic(
+        (list) => (list.some((t) => t.categoryKey === target.categoryKey) ? list : [...list, target]),
+        () => restoreTargetsAction([target]),
       );
     },
     [optimistic],
@@ -169,7 +183,9 @@ export function useRemoteTargets() {
 
   // A failed first load (not just being signed out) is worth a toast.
   React.useEffect(() => {
-    if (query.isError && !(query.error instanceof SignedOutError)) {
+    if (query.isError &&
+      !(query.error instanceof SignedOutError) &&
+      !isOfflineError(query.error)) {
       toast.error("Couldn’t load your targets. Reopen the app to try again.");
     }
   }, [query.isError, query.error]);
@@ -178,6 +194,7 @@ export function useRemoteTargets() {
     targets,
     upsertTarget,
     removeTarget,
+    restoreTarget,
     setTargetOverride,
     renameTargetLabel,
     isLoaded: !query.isPending,

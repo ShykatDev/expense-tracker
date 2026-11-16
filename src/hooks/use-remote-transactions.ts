@@ -4,20 +4,22 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
+import { importTransactionsAction } from "@/app/actions/transactions";
 import {
   addTransactionsAction,
-  importTransactionsAction,
   reassignTransactionAccountAction,
   removeTransactionAction,
   renameTransactionCategoryAction,
   updateTransactionAction,
-} from "@/app/actions/transactions";
+} from "@/lib/offline/queued-actions";
+import { afterSync, isOfflineError } from "@/lib/offline/sync";
 import {
   applyPatch,
   applyReassign,
   applyRename,
   createTransactions,
   normalizePatch,
+  restoreInto,
 } from "@/lib/transaction-ops";
 import {
   STORAGE_KEY,
@@ -63,8 +65,9 @@ export function useRemoteTransactions() {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: TRANSACTIONS_QUERY_KEY,
-    queryFn: fetchTransactions,
-    retry: (count, error) => !(error instanceof SignedOutError) && count < 1,
+    queryFn: () => afterSync(fetchTransactions),
+    retry: (count, error) =>
+      !(error instanceof SignedOutError) && !isOfflineError(error) && count < 1,
   });
 
   const transactions = query.data ?? EMPTY;
@@ -81,7 +84,7 @@ export function useRemoteTransactions() {
       save().catch(() => {
         queryClient.setQueryData(TRANSACTIONS_QUERY_KEY, previous);
         void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
-        toast.error("Couldn’t save that change. Check your connection and try again.");
+        toast.error("That change couldn’t be saved, so it was undone.");
       });
     },
     [queryClient],
@@ -100,6 +103,14 @@ export function useRemoteTransactions() {
   const removeTransaction = React.useCallback(
     (id: string) => {
       optimistic((list) => list.filter((t) => t.id !== id), () => removeTransactionAction(id));
+    },
+    [optimistic],
+  );
+
+  /** Puts deleted entries back exactly as they were (Undo). */
+  const restoreTransactions = React.useCallback(
+    (rows: Transaction[]) => {
+      optimistic((list) => restoreInto(list, rows), () => addTransactionsAction(rows));
     },
     [optimistic],
   );
@@ -180,7 +191,9 @@ export function useRemoteTransactions() {
 
   // A failed first load (not just being signed out) is worth a toast.
   React.useEffect(() => {
-    if (query.isError && !(query.error instanceof SignedOutError)) {
+    if (query.isError &&
+      !(query.error instanceof SignedOutError) &&
+      !isOfflineError(query.error)) {
       toast.error("Couldn’t load your transactions. Reopen the app to try again.");
     }
   }, [query.isError, query.error]);
@@ -189,6 +202,7 @@ export function useRemoteTransactions() {
     transactions,
     addTransactions,
     removeTransaction,
+    restoreTransactions,
     updateTransaction,
     renameCategory,
     reassignAccount,

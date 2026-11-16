@@ -30,6 +30,8 @@ interface RecurringContextValue {
   addRule: (input: RecurringRuleInput) => RecurringRule;
   updateRule: (id: string, input: RecurringRuleInput) => void;
   removeRule: (id: string) => void;
+  /** Puts a deleted rule back exactly as it was (Undo). */
+  restoreRule: (rule: RecurringRule) => void;
   setPaused: (id: string, paused: boolean) => void;
   /**
    * Writes the occurrence to the ledger, dated on its due day, and marks it
@@ -80,6 +82,7 @@ function useContextValue(state: RecurringRulesState): RecurringContextValue {
     addRule,
     updateRule,
     removeRule,
+    restoreRule,
     setPaused,
     markOccurrenceHandled,
     isLoaded,
@@ -147,6 +150,7 @@ function useContextValue(state: RecurringRulesState): RecurringContextValue {
       addRule,
       updateRule,
       removeRule,
+      restoreRule,
       setPaused,
       confirmOccurrence,
       skipOccurrence,
@@ -159,6 +163,7 @@ function useContextValue(state: RecurringRulesState): RecurringContextValue {
       addRule,
       updateRule,
       removeRule,
+      restoreRule,
       setPaused,
       confirmOccurrence,
       skipOccurrence,

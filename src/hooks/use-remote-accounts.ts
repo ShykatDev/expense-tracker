@@ -4,14 +4,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
+import { importAccountsAction } from "@/app/actions/accounts";
 import {
   addAccountAction,
   addTransferAction,
-  importAccountsAction,
   removeAccountAction,
   removeTransferAction,
   updateAccountAction,
-} from "@/app/actions/accounts";
+} from "@/lib/offline/queued-actions";
+import { afterSync, isOfflineError } from "@/lib/offline/sync";
 import { parseLastAccount, type AccountInput, type TransferInput } from "@/hooks/use-accounts";
 import { useLocalStorageJson } from "@/hooks/use-local-storage";
 import {
@@ -70,8 +71,9 @@ export function useRemoteAccounts() {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ACCOUNTS_QUERY_KEY,
-    queryFn: fetchAccounts,
-    retry: (count, error) => !(error instanceof SignedOutError) && count < 1,
+    queryFn: () => afterSync(fetchAccounts),
+    retry: (count, error) =>
+      !(error instanceof SignedOutError) && !isOfflineError(error) && count < 1,
   });
   const data = query.data ?? INITIAL;
 
@@ -91,7 +93,7 @@ export function useRemoteAccounts() {
       save().catch(() => {
         queryClient.setQueryData(ACCOUNTS_QUERY_KEY, previous);
         void queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
-        toast.error("Couldn’t save that change. Check your connection and try again.");
+        toast.error("That change couldn’t be saved, so it was undone.");
       });
     },
     [queryClient],
@@ -228,7 +230,9 @@ export function useRemoteAccounts() {
   }, [query.isSuccess, queryClient]);
 
   React.useEffect(() => {
-    if (query.isError && !(query.error instanceof SignedOutError)) {
+    if (query.isError &&
+      !(query.error instanceof SignedOutError) &&
+      !isOfflineError(query.error)) {
       toast.error("Couldn’t load your accounts. Reopen the app to try again.");
     }
   }, [query.isError, query.error]);

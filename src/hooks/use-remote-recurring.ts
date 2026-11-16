@@ -4,12 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
+import { importRecurringRulesAction } from "@/app/actions/recurring";
 import {
   addRecurringRuleAction,
-  importRecurringRulesAction,
   removeRecurringRuleAction,
   updateRecurringRuleAction,
-} from "@/app/actions/recurring";
+} from "@/lib/offline/queued-actions";
+import { afterSync, isOfflineError } from "@/lib/offline/sync";
 import { createId } from "@/lib/id";
 import {
   RECURRING_STORAGE_KEY,
@@ -58,8 +59,9 @@ export function useRemoteRecurringRules() {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: RECURRING_QUERY_KEY,
-    queryFn: fetchRules,
-    retry: (count, error) => !(error instanceof SignedOutError) && count < 1,
+    queryFn: () => afterSync(fetchRules),
+    retry: (count, error) =>
+      !(error instanceof SignedOutError) && !isOfflineError(error) && count < 1,
   });
 
   const rules = query.data ?? EMPTY;
@@ -76,7 +78,7 @@ export function useRemoteRecurringRules() {
       save().catch(() => {
         queryClient.setQueryData(RECURRING_QUERY_KEY, previous);
         void queryClient.invalidateQueries({ queryKey: RECURRING_QUERY_KEY });
-        toast.error("Couldn’t save that change. Check your connection and try again.");
+        toast.error("That change couldn’t be saved, so it was undone.");
       });
     },
     [queryClient],
@@ -124,6 +126,17 @@ export function useRemoteRecurringRules() {
       optimistic(
         (list) => list.filter((rule) => rule.id !== id),
         () => removeRecurringRuleAction(id),
+      );
+    },
+    [optimistic],
+  );
+
+  /** Puts a deleted rule back exactly as it was, same id (Undo). */
+  const restoreRule = React.useCallback(
+    (rule: RecurringRule) => {
+      optimistic(
+        (list) => (list.some((r) => r.id === rule.id) ? list : [rule, ...list]),
+        () => addRecurringRuleAction(rule),
       );
     },
     [optimistic],
@@ -189,7 +202,9 @@ export function useRemoteRecurringRules() {
 
   // A failed first load (not just being signed out) is worth a toast.
   React.useEffect(() => {
-    if (query.isError && !(query.error instanceof SignedOutError)) {
+    if (query.isError &&
+      !(query.error instanceof SignedOutError) &&
+      !isOfflineError(query.error)) {
       toast.error("Couldn’t load your recurring rules. Reopen the app to try again.");
     }
   }, [query.isError, query.error]);
@@ -199,6 +214,7 @@ export function useRemoteRecurringRules() {
     addRule,
     updateRule,
     removeRule,
+    restoreRule,
     setPaused,
     markOccurrenceHandled,
     isLoaded: !query.isPending,

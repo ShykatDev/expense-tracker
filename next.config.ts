@@ -9,6 +9,23 @@ const nextConfig: NextConfig = {
    * Update the address if the router assigns this machine a new one.
    */
   allowedDevOrigins: ["192.168.11.86"],
+
+  /*
+   * The service worker must never be cached by the browser or a CDN, or
+   * phones would keep running an old copy of it after a deploy.
+   */
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self'" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

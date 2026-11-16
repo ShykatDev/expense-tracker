@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "@yusufceng1z/ding-react";
 
 import { useCategories } from "@/components/categories/categories-provider";
 import { useTargets } from "@/components/targets/targets-provider";
@@ -19,8 +18,9 @@ import { monthKey } from "@/lib/targets";
 import { findBudgetAlerts } from "@/lib/budget-alerts";
 
 import { usePublishBalance } from "./balance-summary-store";
+import { AccountBalances } from "./account-balances";
 import { BudgetAlerts } from "./budget-alerts";
-import { ConfirmTransactionActionDialog } from "./confirm-transaction-action";
+import { useDeleteTransaction } from "./use-delete-transaction";
 import { DashboardHero } from "./dashboard-hero";
 import { ExpandableSheet } from "@/components/layout/expandable-sheet";
 import { MonthlyRecap } from "./monthly-recap";
@@ -203,11 +203,9 @@ function DashboardContent({
   monthKey: string;
 }) {
   const router = useRouter();
-  const { removeTransaction } = useTransactions();
   const { categories } = useCategories();
   const { targets } = useTargets();
-  const [deletingTransaction, setDeletingTransaction] =
-    React.useState<Transaction | null>(null);
+  const deleteTransaction = useDeleteTransaction();
 
   const allCustomCategories = React.useMemo(
     () => [...categories.income, ...categories.expense],
@@ -249,12 +247,6 @@ function DashboardContent({
     [monthTotals.income, monthTotals.expense, previousMonthSavings],
   );
 
-  function handleConfirmDelete() {
-    if (!deletingTransaction) return;
-    removeTransaction(deletingTransaction.id);
-    toast.success(`Deleted ${deletingTransaction.type} entry`);
-    setDeletingTransaction(null);
-  }
 
   return (
     <>
@@ -284,6 +276,9 @@ function DashboardContent({
             <MonthlyRecap transactions={allTransactions} />
 
             <BudgetAlerts alerts={budgetAlerts} />
+
+            {/* Balance per account; hidden while Cash is the only one. */}
+            <AccountBalances />
 
             <SpentCategories
               transactions={monthTransactions}
@@ -320,7 +315,7 @@ function DashboardContent({
                 onEdit={(transaction) =>
                   router.push(`/transaction?edit=${transaction.id}`)
                 }
-                onDelete={setDeletingTransaction}
+                onDelete={deleteTransaction}
                 emptyMessage="Nothing added today yet."
               />
             </SheetSection>
@@ -328,16 +323,6 @@ function DashboardContent({
         }
       />
 
-      <ConfirmTransactionActionDialog
-        open={deletingTransaction !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeletingTransaction(null);
-        }}
-        action="delete"
-        transaction={deletingTransaction}
-        customCategories={allCustomCategories}
-        onConfirm={handleConfirmDelete}
-      />
     </>
   );
 }
