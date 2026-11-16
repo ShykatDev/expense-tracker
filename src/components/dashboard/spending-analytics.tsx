@@ -3,7 +3,6 @@
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import * as React from "react";
 
-import { resolveCategoryIcon } from "@/lib/categories";
 import {
   computeCategoryTotals,
   type CustomCategory,
@@ -12,7 +11,6 @@ import {
   type Transaction,
 } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
-import { ProgressBar } from "@/components/ui/progress-bar";
 
 export type AnalyticsRange = "daily" | "weekly" | "monthly";
 
@@ -512,77 +510,145 @@ function RangeTabs({
  * the selected month, largest first, each with its share of the month's
  * spending drawn as a thin bar. The biggest category gets the accent colour.
  */
+/**
+ * Categorical colours for the top categories, in fixed order (validated for
+ * colour-blind separation and contrast on the app's dark surface). Anything
+ * past them folds into a neutral "Other", never a generated fifth hue.
+ */
+const CATEGORY_COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500"];
+const OTHER_COLOR = "#6b6e76";
+
+/**
+ * Where this month's spending went, compact: one thin segmented bar for the
+ * split, and a short list beneath it (colour dot, name, share, amount) that
+ * doubles as the bar's legend. The top four categories get their own colour;
+ * the rest fold into "Other", which expands to list them.
+ */
 export function SpentCategories({
   transactions,
-  customCategories = [],
 }: {
   transactions: Transaction[];
+  /** Kept for callers; the compact list no longer shows category icons. */
   customCategories?: CustomCategory[];
 }) {
+  const [showAll, setShowAll] = React.useState(false);
   const rows = React.useMemo(
     () => computeCategoryTotals(transactions).filter((entry) => entry.type === "expense"),
     [transactions],
   );
   const total = rows.reduce((sum, row) => sum + row.total, 0);
 
+  const top = rows.slice(0, CATEGORY_COLORS.length);
+  const rest = rows.slice(CATEGORY_COLORS.length);
+  const restTotal = rest.reduce((sum, row) => sum + row.total, 0);
+  const segments = [
+    ...top.map((row, index) => ({
+      key: row.category,
+      label: row.category,
+      total: row.total,
+      color: CATEGORY_COLORS[index],
+    })),
+    ...(restTotal > 0
+      ? [{ key: "__other", label: `Other (${rest.length})`, total: restTotal, color: OTHER_COLOR }]
+      : []),
+  ];
+  const share = (value: number) => (total > 0 ? value / total : 0);
+  const percent = (value: number) => `${Math.max(1, Math.round(share(value) * 100))}%`;
+
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-col items-center gap-0.5">
-        <h2 className="text-xs font-medium text-white/50">Spent Category</h2>
+    <section className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-3 px-1">
+        <h2 className="text-sm font-semibold text-white">Spent by category</h2>
         {total > 0 && (
           <p className="text-xs tabular-nums text-white/50">
-            {formatCurrency(total)} across {rows.length}{" "}
-            {rows.length === 1 ? "category" : "categories"}
+            {formatCurrency(total)} · {rows.length} {rows.length === 1 ? "category" : "categories"}
           </p>
         )}
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded-3xl bg-white/6 px-5 py-6 text-center text-sm text-white/50">
+        <p className="rounded-3xl bg-white/6 px-5 py-5 text-center text-sm text-white/50">
           Nothing spent this month yet
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {rows.map((row, index) => {
-            const share = total > 0 ? row.total / total : 0;
-            const Icon = resolveCategoryIcon("expense", row.category, customCategories);
-            const isTop = index === 0;
-            return (
-              <li
-                key={row.category}
-                className="flex items-center gap-3 rounded-3xl bg-white/6 py-3 pr-5 pl-3"
-              >
-                <span
-                  className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-full",
-                    "bg-white/8", isTop ? "text-[#6f97e6]" : "text-white",
+        <div className="flex flex-col gap-3 rounded-3xl bg-white/6 p-4">
+          {/* Thin segmented bar: widths are each part's share; a 2px gap of
+              the card surface separates neighbours. */}
+          <div
+            role="img"
+            aria-label={segments
+              .map((segment) => `${segment.label} ${formatCurrency(segment.total)} (${percent(segment.total)})`)
+              .join(", ")}
+            className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full"
+          >
+            {segments.map((segment) => (
+              <span
+                key={segment.key}
+                title={`${segment.label} · ${formatCurrency(segment.total)} · ${percent(segment.total)}`}
+                className="h-full min-w-1 first:rounded-l-full last:rounded-r-full"
+                style={{ flexGrow: segment.total, flexBasis: 0, backgroundColor: segment.color }}
+              />
+            ))}
+          </div>
+
+          {/* The legend, with figures: one short row per part. */}
+          <ul className="flex flex-col">
+            {segments.map((segment) => {
+              const isOther = segment.key === "__other";
+              const content = (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: segment.color }}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-left text-sm text-white/85">
+                    {segment.label}
+                  </span>
+                  <span className="w-10 shrink-0 text-right text-xs tabular-nums text-white/50">
+                    {percent(segment.total)}
+                  </span>
+                  <span className="w-20 shrink-0 text-right text-sm font-medium tabular-nums text-white">
+                    {formatCurrency(segment.total)}
+                  </span>
+                </>
+              );
+              return (
+                <li key={segment.key}>
+                  {isOther ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAll((prev) => !prev)}
+                      aria-expanded={showAll}
+                      className="flex h-9 w-full items-center gap-3 rounded-xl transition-colors active:bg-white/4"
+                    >
+                      {content}
+                    </button>
+                  ) : (
+                    <div className="flex h-9 items-center gap-3">{content}</div>
                   )}
-                >
-                  <Icon className="size-4" />
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="truncate text-sm text-white/85">{row.category}</span>
-                    <span className="shrink-0 text-sm font-medium tabular-nums text-white">
-                      {formatCurrency(row.total)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <ProgressBar
-                      className="flex-1"
-                      value={share}
-                      minVisible={0.02}
-                      tone={isTop ? "blue" : "muted"}
-                    />
-                    <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-white/50">
-                      {Math.round(share * 100)}%
-                    </span>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                  {isOther && showAll && (
+                    <ul className="mb-1 flex flex-col border-l border-white/10 pl-3 ml-1">
+                      {rest.map((row) => (
+                        <li key={row.category} className="flex h-8 items-center gap-3">
+                          <span className="min-w-0 flex-1 truncate text-[13px] text-white/65">
+                            {row.category}
+                          </span>
+                          <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-white/40">
+                            {percent(row.total)}
+                          </span>
+                          <span className="w-20 shrink-0 text-right text-[13px] tabular-nums text-white/75">
+                            {formatCurrency(row.total)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </section>
   );

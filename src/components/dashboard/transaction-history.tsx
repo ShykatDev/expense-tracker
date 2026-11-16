@@ -61,12 +61,15 @@ export function TransactionHistory({
   onEdit,
   onDelete,
   emptyMessage = "No entries for this period yet.",
+  showDayHeaders = true,
 }: {
   transactions: Transaction[];
   customCategories?: CustomCategory[];
   onEdit: (transaction: Transaction) => void;
   onDelete: (transaction: Transaction) => void;
   emptyMessage?: string;
+  /** Off where the section title already names the day (Home's "Today"). */
+  showDayHeaders?: boolean;
 }) {
   const [selected, setSelected] = React.useState<Transaction | null>(null);
   const groups = groupTransactionsByDay(transactions);
@@ -88,6 +91,7 @@ export function TransactionHistory({
         );
         return (
           <div key={group.label} className="flex flex-col gap-2">
+            {showDayHeaders && (
             <div className="flex items-center justify-between px-1 text-xs">
               <span className="font-medium text-white/50">{group.label}</span>
               {/* No minus sign: a day that spent more than it earned shows in red. */}
@@ -96,6 +100,7 @@ export function TransactionHistory({
                 {formatCurrency(net)}
               </span>
             </div>
+            )}
             <Card className="gap-0 py-1.5">
               {group.items.map((transaction) => (
                 <TransactionRow

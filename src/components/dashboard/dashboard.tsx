@@ -8,6 +8,7 @@ import { useCategories } from "@/components/categories/categories-provider";
 import { useTargets } from "@/components/targets/targets-provider";
 import {
   computeTotals,
+  formatCurrency,
   isWithinDateRange,
   type DateRangeFilter,
   type Transaction,
@@ -31,8 +32,6 @@ import { TargetsList } from "./targets-list";
 import { TransactionHistory } from "./transaction-history";
 import { useTransactions } from "./transactions-provider";
 
-/** How many entries the dashboard previews before "See all". */
-const RECENT_COUNT = 5;
 
 function startOfMonth(monthOffset: number) {
   const now = new Date();
@@ -215,12 +214,17 @@ function DashboardContent({
     [categories.income, categories.expense],
   );
 
-  const recentTransactions = React.useMemo(
+  // Home lists only today's entries, newest first; History has the rest.
+  const todayTransactions = React.useMemo(
     () =>
-      [...monthTransactions]
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, RECENT_COUNT),
-    [monthTransactions],
+      allTransactions
+        .filter((t) => isWithinDateRange(t.createdAt, "today", monthAnchor))
+        .sort((a, b) => b.createdAt - a.createdAt),
+    [allTransactions, monthAnchor],
+  );
+  const todaySpent = todayTransactions.reduce(
+    (sum, t) => (t.type === "expense" ? sum + t.amount : sum),
+    0,
   );
 
   // Targets at or past 80% of the navbar month's cap, for the alert strip.
@@ -299,10 +303,10 @@ function DashboardContent({
             />
 
             <SheetSection
-              title="Recent transactions"
+              title="Today"
               subtitle={
-                monthTransactions.length > RECENT_COUNT
-                  ? `Latest ${RECENT_COUNT} of ${monthTransactions.length} this month`
+                todayTransactions.length > 0
+                  ? `${todayTransactions.length} ${todayTransactions.length === 1 ? "entry" : "entries"}${todaySpent > 0 ? ` · ${formatCurrency(todaySpent)} spent` : ""}`
                   : undefined
               }
               action={
@@ -310,13 +314,14 @@ function DashboardContent({
               }
             >
               <TransactionHistory
-                transactions={recentTransactions}
+                transactions={todayTransactions}
+                showDayHeaders={false}
                 customCategories={allCustomCategories}
                 onEdit={(transaction) =>
                   router.push(`/transaction?edit=${transaction.id}`)
                 }
                 onDelete={setDeletingTransaction}
-                emptyMessage="No transactions this month yet."
+                emptyMessage="Nothing added today yet."
               />
             </SheetSection>
           </>
