@@ -7,10 +7,9 @@ import { toast } from "@yusufceng1z/ding-react";
 import { useRecurring } from "@/components/recurring/recurring-provider";
 import {
   RecurringCategoryIcon,
-  formatTyped,
   parseTypedAmount,
 } from "@/components/recurring/recurring-shared";
-import { NumericKeypad } from "@/components/transaction/numeric-keypad";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -84,28 +83,17 @@ export function RecurringConfirmDialog({
             </div>
 
             <div className="flex flex-col items-center gap-1">
-              <p
-                aria-live="polite"
-                aria-label={`Amount ${amount || "0"}`}
-                className="font-display text-5xl font-semibold tracking-tight tabular-nums whitespace-nowrap"
-              >
-                <span className={amount ? "text-white" : "text-white/30"}>৳</span>
-                <span className={amount ? "text-white" : "text-white/30"}>
-                  {formatTyped(amount)}
-                </span>
-              </p>
+              <AmountInput
+                value={amount}
+                onChange={setAmount}
+                onSubmit={handleConfirm}
+                className="text-5xl font-semibold"
+              />
               <p className="text-xs text-white/50">
                 usually {formatCurrency(occurrence.amount)}
               </p>
             </div>
 
-            <NumericKeypad
-              value={amount}
-              onChange={setAmount}
-              variant="dark"
-              endKey="backspace"
-              compact
-            />
           </div>
         )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Delete, Plus, RotateCcw, StickyNote, X } from "lucide-react";
+import { Check, Plus, RotateCcw, StickyNote, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
@@ -13,7 +13,8 @@ import { SheetToggle } from "@/components/layout/app-shell";
 import { AccountSheet } from "@/components/transaction/account-sheet";
 import { CategorySheet } from "@/components/transaction/category-sheet";
 import { DateStrip } from "@/components/transaction/date-strip";
-import { applyKey, NumericKeypad } from "@/components/transaction/numeric-keypad";
+import { AmountInput, formatAmount } from "@/components/ui/amount-input";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import {
   applySavedTransaction,
   findBudgetCrossings,
@@ -57,20 +58,6 @@ function withTimeOf(day: number, timeSource: number) {
   return day + (timeSource - startOfDay(timeSource));
 }
 
-/**
- * Splits the raw amount into the part the user typed and the part implied to
- * complete two decimals, so "20" renders as "20" + a faint ".00".
- */
-function splitAmount(raw: string) {
-  if (raw === "") return { typed: "", implied: "0.00" };
-  const [whole, fraction] = raw.split(".");
-  const typedWhole = Number(whole).toLocaleString("en-US");
-  if (fraction === undefined) return { typed: typedWhole, implied: ".00" };
-  return {
-    typed: `${typedWhole}.${fraction}`,
-    implied: "0".repeat(2 - fraction.length),
-  };
-}
 
 /**
  * The most recent distinct category + amount pairs of one type, newest first.
@@ -252,35 +239,11 @@ export function TransactionEntry() {
     router.push("/");
   }
 
-  // A hardware keyboard works too, which matters on desktop.
-  const confirmRef = React.useRef(handleConfirm);
-  React.useEffect(() => {
-    confirmRef.current = handleConfirm;
-  });
-  React.useEffect(() => {
-    if (sheetOpen || accountSheetOpen) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea")) return;
+  const keyboardInset = useKeyboardInset();
 
-      if (/^[0-9.]$/.test(event.key)) {
-        setAmount((prev) => applyKey(prev, event.key));
-      } else if (event.key === "Backspace") {
-        setAmount((prev) => prev.slice(0, -1));
-      } else if (event.key === "Enter") {
-        event.preventDefault();
-        confirmRef.current();
-      } else {
-        return;
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [sheetOpen, accountSheetOpen]);
-
-  const { typed, implied } = splitAmount(amount);
-  const amountLength = typed.length + implied.length;
+  /** Characters on screen, commas included, to shrink long amounts. */
+  const amountLength = formatAmount(amount).length;
+  const saveLabel = editing ? "Save changes" : type === "income" ? "Add income" : "Add expense";
 
   return (
     <div
@@ -312,32 +275,27 @@ export function TransactionEntry() {
       </div>
 
       {/* Amount and category */}
-      <section className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-5">
-        <div className="relative flex w-full items-center justify-center">
-          <p
-            aria-live="polite"
-            aria-label={`Amount ${amount || "0"}`}
-            className={cn(
-              "font-display font-normal tracking-tight tabular-nums whitespace-nowrap transition-[font-size] duration-150",
-              amountLength > 11 ? "text-4xl" : amountLength > 8 ? "text-5xl" : "text-[3.25rem]",
-            )}
-          >
-            <span className={amount ? "text-neutral-900" : "text-neutral-300"}>৳</span>
-            <span>{typed}</span>
-            <span className="text-neutral-300">{implied}</span>
-          </p>
-
-          {amount && (
-            <button
-              type="button"
-              aria-label="Delete last digit"
-              onClick={() => setAmount((prev) => prev.slice(0, -1))}
-              className="absolute right-0 flex size-10 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 active:scale-90"
-            >
-              <Delete className="size-5" strokeWidth={1.75} />
-            </button>
+      {/* Amount, category and note, one even gap apart. */}
+      <section className="flex flex-col items-center gap-4 px-6 pt-10 pb-5">
+        {/* Typed with the phone's own number pad. */}
+        <AmountInput
+          variant="light"
+          value={amount}
+          onChange={setAmount}
+          onSubmit={handleConfirm}
+          autoFocus
+          label="Amount"
+          className={cn(
+            "font-normal transition-[font-size] duration-150",
+            // "/none" sets line-height 1 with the size: the big type's default
+            // line height added space above and below, making gaps uneven.
+            amountLength > 10
+              ? "text-4xl/none"
+              : amountLength > 7
+                ? "text-5xl/none"
+                : "text-[3.25rem]/none",
           )}
-        </div>
+        />
 
         <button
           type="button"
@@ -465,8 +423,24 @@ export function TransactionEntry() {
         </div>
       )}
 
-      <div className="px-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
-        <NumericKeypad value={amount} onChange={setAmount} onConfirm={handleConfirm} />
+      {/* Save is pinned to the bottom of the screen. While the phone keyboard
+          is open it rides just above it (iPhone's number pad has no return
+          key, so this is the way to save). */}
+      <div
+        className="sticky bottom-0 z-10 mt-auto bg-white px-6 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+        style={keyboardInset ? { transform: `translateY(-${keyboardInset}px)`, paddingBottom: "0.75rem" } : undefined}
+      >
+        <button
+          type="button"
+          onClick={handleConfirm}
+          className={cn(
+            "flex h-14 w-full items-center justify-center gap-2 rounded-full text-[15px] font-medium transition-[transform,background-color,opacity] active:scale-[0.98]",
+            amountValid ? "bg-black text-white" : "bg-neutral-200 text-neutral-500",
+          )}
+        >
+          <Check className="size-5" strokeWidth={2.25} />
+          {saveLabel}
+        </button>
       </div>
 
       <CategorySheet

@@ -5,7 +5,7 @@ import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
 import { IconPicker } from "@/components/categories/icon-picker";
-import { NumericKeypad } from "@/components/transaction/numeric-keypad";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -77,12 +77,6 @@ function formatShortDay(time: number) {
 /** Earlier prices shown under the amount; older ones are summarised. */
 const MAX_PRICES_SHOWN = 3;
 
-/** "80000" → "80,000", keeping a trailing "." while it is being typed. */
-function formatTyped(raw: string) {
-  if (!raw) return "0";
-  const trailingDot = raw.endsWith(".");
-  return Number(raw.replace(/\.$/, "")).toLocaleString("en-US") + (trailingDot ? "." : "");
-}
 
 /**
  * Add or edit a goal, built like the entry screen: the name in a pill, the
@@ -343,16 +337,15 @@ export function GoalDialog({
             />
           </div>
 
-          {/* The target amount, large, as on the entry screen. */}
+          {/* The target amount, large, typed with the phone's number pad. */}
           <div className="flex flex-col items-center gap-1">
-            <p
-              aria-live="polite"
-              aria-label={`Target amount ${amount || "0"}`}
-              className="font-display text-5xl font-semibold tracking-tight tabular-nums whitespace-nowrap"
-            >
-              <span className={amount ? "text-white" : "text-white/30"}>৳</span>
-              <span className={amount ? "text-white" : "text-white/30"}>{formatTyped(amount)}</span>
-            </p>
+            <AmountInput
+              value={amount}
+              onChange={setAmount}
+              onSubmit={handleSubmit}
+              label="Target price"
+              className="text-5xl font-semibold"
+            />
             <p className="text-xs text-white/50">target price</p>
             {(priceChanged || earlierPrices.length > 0) && (
               <p className="max-w-full px-2 text-center text-[11px] leading-snug tabular-nums text-white/40">
@@ -452,7 +445,7 @@ export function GoalDialog({
             </button>
           </div>
 
-          {/* The keypad, or the icon grid in its place while choosing. */}
+          {/* The icon grid or the links editor, when their tab is open. */}
           {pickingIcon ? (
             <div className="animate-in fade-in duration-200">
               <IconPicker
@@ -518,15 +511,7 @@ export function GoalDialog({
                 Done
               </button>
             </div>
-          ) : (
-            <NumericKeypad
-              value={amount}
-              onChange={setAmount}
-              variant="dark"
-              endKey="backspace"
-              compact
-            />
-          )}
+          ) : null}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row">

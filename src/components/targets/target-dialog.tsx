@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { NumericKeypad } from "@/components/transaction/numeric-keypad";
+import { AmountInput } from "@/components/ui/amount-input";
 import type { ResolvedCategory } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
@@ -100,18 +100,13 @@ export function TargetDialog({
         <div className="flex min-w-0 flex-col gap-5">
           {/* The amount, large, like the entry screen. */}
           <div className="flex flex-col items-center gap-1.5">
-            <p
-              aria-live="polite"
-              aria-label={`Monthly target ${amount || "0"}`}
-              className="font-display text-5xl font-semibold tracking-tight tabular-nums whitespace-nowrap"
-            >
-              <span className={amount ? "text-white" : "text-white/30"}>৳</span>
-              <span className={amount ? "text-white" : "text-white/30"}>
-                {amount
-                  ? Number(amount.replace(/\.$/, "")).toLocaleString("en-US") + (amount.endsWith(".") ? "." : "")
-                  : "0"}
-              </span>
-            </p>
+            <AmountInput
+              value={amount}
+              onChange={setAmount}
+              onSubmit={handleSubmit}
+              label="Monthly target"
+              className="text-5xl font-semibold"
+            />
             <p className="text-xs text-white/50">
               per month, from {monthName} onward
             </p>
@@ -188,15 +183,7 @@ export function TargetDialog({
                 })
               )}
             </div>
-          ) : (
-            <NumericKeypad
-              value={amount}
-              onChange={setAmount}
-              variant="dark"
-              endKey="backspace"
-              compact
-            />
-          )}
+          ) : null}
         </div>
 
         <DialogFooter className="flex-col sm:flex-row">

@@ -172,14 +172,10 @@ export function TargetsSection() {
           ))}
         </Card>
       ) : rows.length === 0 ? (
-        <Card className="items-center justify-center gap-1 py-6 text-center">
-          <Target className="size-5 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">
-            No targets set yet
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Set a cap and the dashboard will show how close you are to it.
-          </p>
+        <Card className="items-center justify-center gap-1 px-6 py-7 text-center">
+          <Target className="mb-1 size-4 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">No limits yet</p>
+          <p className="text-xs text-muted-foreground">Set a monthly cap for any category.</p>
         </Card>
       ) : (
         <div className="flex flex-col gap-2">

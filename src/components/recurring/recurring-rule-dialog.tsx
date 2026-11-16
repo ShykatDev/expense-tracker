@@ -7,7 +7,7 @@ import { toast } from "@yusufceng1z/ding-react";
 import { useCategories } from "@/components/categories/categories-provider";
 import { SheetToggle } from "@/components/layout/app-shell";
 import { formatTyped, parseTypedAmount } from "@/components/recurring/recurring-shared";
-import { NumericKeypad } from "@/components/transaction/numeric-keypad";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -321,22 +321,15 @@ export function RecurringRuleDialog({
                   </span>
                   {category} · {type}
                 </button>
-                <p
-                  aria-live="polite"
-                  aria-label={`Amount ${amount || "0"}`}
-                  className="font-display text-5xl font-semibold tracking-tight tabular-nums whitespace-nowrap"
-                >
-                  <span className={amount ? "text-white" : "text-white/30"}>৳</span>
-                  <span className={amount ? "text-white" : "text-white/30"}>{formatTyped(amount)}</span>
-                </p>
+                {/* The phone's number pad opens straight away on this step. */}
+                <AmountInput
+                  value={amount}
+                  onChange={setAmount}
+                  onSubmit={goNext}
+                  autoFocus
+                  className="text-5xl font-semibold"
+                />
               </div>
-              <NumericKeypad
-                value={amount}
-                onChange={setAmount}
-                variant="dark"
-                endKey="backspace"
-                compact
-              />
             </>
           )}
 
