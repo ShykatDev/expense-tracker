@@ -71,6 +71,15 @@ export function AccountsSection() {
   // Bumped on every open so the dialogs start from fresh state.
   const [dialogKey, setDialogKey] = React.useState(0);
 
+  // Accounts at ৳0 are tucked away behind "Show N empty accounts", so the
+  // list shows where money actually is. If every account is empty (a new
+  // user), they're all shown — an empty list would say nothing.
+  const [showEmpty, setShowEmpty] = React.useState(false);
+  const isEmpty = (account: Account) => Math.abs(balances[account.id] ?? 0) < 0.005;
+  const emptyCount = accounts.filter(isEmpty).length;
+  const allEmpty = emptyCount === accounts.length;
+  const listed = showEmpty || allEmpty ? accounts : accounts.filter((a) => !isEmpty(a));
+
   const usage = React.useMemo(() => {
     if (!editedAccount) return { entries: 0, transfers: 0 };
     const known = new Set(accounts.map((a) => a.id));
@@ -125,14 +134,14 @@ export function AccountsSection() {
       }
     >
       <Card className="gap-0 py-1">
-        {accounts.map((account, index) => (
+        {listed.map((account, index) => (
           <button
             key={account.id}
             type="button"
             onClick={() => openEditor(account)}
             className={cn(
               "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/4 active:bg-white/6",
-              index !== accounts.length - 1 && "border-b border-white/6",
+              index !== listed.length - 1 && "border-b border-white/6",
             )}
           >
             {hasAccountLogo(account) ? (
@@ -156,6 +165,18 @@ export function AccountsSection() {
             />
           </button>
         ))}
+        {emptyCount > 0 && !allEmpty && (
+          <button
+            type="button"
+            onClick={() => setShowEmpty((prev) => !prev)}
+            aria-expanded={showEmpty}
+            className="mx-4 mt-1 mb-1.5 self-start rounded-full px-3 py-1.5 text-xs text-white/55 transition-colors hover:bg-white/6 hover:text-white"
+          >
+            {showEmpty
+              ? "Hide empty accounts"
+              : `Show ${emptyCount} empty ${emptyCount === 1 ? "account" : "accounts"} (৳0)`}
+          </button>
+        )}
       </Card>
 
       {!hasMultipleAccounts && (

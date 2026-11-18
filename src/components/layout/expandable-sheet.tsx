@@ -269,7 +269,10 @@ export function ExpandableSheet({
       {/* The sheet */}
       <div
         ref={sheetRef}
-        className="absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-[2rem] bg-[linear-gradient(180deg,#121316_0%,#060607_20rem,#000_100%)] shadow-[0_-1px_0_0_rgba(255,255,255,0.06),0_-20px_50px_-20px_rgba(0,0,0,0.8)] will-change-transform"
+        // Top edge: a 1px light border (it follows the rounded corners) and a
+        // faint wash of the hero's blue fading out within ~8rem, so the sheet
+        // reads as lit from above rather than a flat slab.
+        className="absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-[2rem] bg-[radial-gradient(120%_8rem_at_50%_0%,rgba(127,163,236,0.07),transparent),linear-gradient(180deg,#121316_0%,#060607_20rem,#000_100%)] border-t border-white/15 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.8)] will-change-transform"
         style={{ top: "var(--compact-h, 0px)" }}
       >
         <button

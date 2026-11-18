@@ -3,15 +3,10 @@
 import {
   ChevronRight,
   Database,
-  Goal,
-  Receipt,
   Repeat,
   RotateCw,
-  Tags,
-  Target,
   Trash2,
   Smartphone,
-  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
@@ -24,7 +19,7 @@ import { useCategories } from "@/components/categories/categories-provider";
 import { useTransactions } from "@/components/dashboard/transactions-provider";
 import { useGoals } from "@/components/goals/goals-provider";
 import { useRecurring } from "@/components/recurring/recurring-provider";
-import { ExpandableSheet, useSheetControls } from "@/components/layout/expandable-sheet";
+import { ExpandableSheet } from "@/components/layout/expandable-sheet";
 import {
   AppHero,
   SheetSection,
@@ -87,15 +82,6 @@ export function SettingsView({
 
   const customCategoryCount = categories.income.length + categories.expense.length;
 
-  // Each row opens where that data is managed. Accounts live further down
-  // this page, so that row opens the sheet and scrolls to them instead.
-  const rows: DataRow[] = [
-    { label: "Transactions", count: transactions.length, icon: Receipt, href: "/history" },
-    { label: "Custom categories", count: customCategoryCount, icon: Tags, href: "/categories" },
-    { label: "Monthly targets", count: targets.length, icon: Target, href: "/categories" },
-    { label: "Goals", count: goals.length, icon: Goal, href: "/goals" },
-    { label: "Accounts", count: accounts.length, icon: Wallet, sectionId: ACCOUNTS_SECTION_ID },
-  ];
 
   const [reloading, setReloading] = React.useState(false);
   const [installOpen, setInstallOpen] = React.useState(false);
@@ -149,7 +135,8 @@ export function SettingsView({
         hero={
           <AppHero label="Settings" value={<AnimatedNumber value={transactions.length} />}>
             <p className="text-xs text-white/55">
-              {transactions.length === 1 ? "entry" : "entries"} stored on this device
+              {transactions.length === 1 ? "entry" : "entries"}
+              {synced ? ", synced to your account" : " stored on this device"}
             </p>
             <button
               type="button"
@@ -162,27 +149,22 @@ export function SettingsView({
           </AppHero>
         }
         peek={() => (
-          // The signed-in account first, then what's stored.
+          // Sign-in first, then the accounts. (The old "Your data" counts
+          // only linked to pages the bottom bar already reaches.)
           <div className="flex flex-col gap-10">
-            <AccountCard authEnabled={authEnabled} />
-            <SheetSection
-              title="Your data"
-              subtitle={
-                synced
-                  ? "Synced to your Google account. Goal photos stay on this device for now."
-                  : "Everything is kept in this browser only — nothing is uploaded"
-              }
-            >
-              <DataRows rows={rows} />
-            </SheetSection>
+            <div className="flex flex-col gap-2">
+              <AccountCard authEnabled={authEnabled} />
+              <p className="px-1 text-xs leading-relaxed text-white/45">
+                {synced
+                  ? "Your data is synced to your Google account. Goal photos stay on this device for now."
+                  : "Everything is kept in this browser only — nothing is uploaded."}
+              </p>
+            </div>
+            <AccountsSection />
           </div>
         )}
         details={
           <>
-            <div id={ACCOUNTS_SECTION_ID}>
-              <AccountsSection />
-            </div>
-
             <SheetSection title="Recurring">
               <Card className="gap-0 py-1">
                 <Link
@@ -230,9 +212,11 @@ export function SettingsView({
             </SheetSection>
 
             <SheetSection title="Danger zone">
-              <div className="flex flex-col gap-4 rounded-3xl bg-rose-500/8 p-5 ring-1 ring-rose-400/15">
+              {/* Amber: clears your entries but keeps the account. Red is kept
+                  for deleting the account itself, below. */}
+              <div className="flex flex-col gap-4 rounded-3xl bg-amber-500/8 p-5 ring-1 ring-amber-400/15">
                 <div className="flex items-start gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-300">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-300">
                     <Database className="size-4" />
                   </div>
                   <div className="min-w-0">
@@ -244,14 +228,14 @@ export function SettingsView({
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="destructive"
-                  size="lg"
+                <button
+                  type="button"
                   onClick={() => setConfirmOpen(true)}
+                  className="flex h-12 items-center justify-center gap-2 rounded-full bg-amber-500/15 px-5 text-sm font-medium text-amber-200 ring-1 ring-amber-400/30 transition-colors hover:bg-amber-500/25 active:scale-[0.98]"
                 >
-                  <Trash2 />
+                  <Trash2 className="size-4" />
                   Reset all data
-                </Button>
+                </button>
               </div>
               {/* Only for synced users: guests have no account to delete. */}
               {synced && <DeleteAccountBlock />}
@@ -282,6 +266,7 @@ export function SettingsView({
           <DialogFooter>
             {/* Hold, not a typed word: hard to trigger by accident, one gesture. */}
             <HoldButton
+              tone="amber"
               onConfirm={handleReset}
               busy={resetting}
               busyLabel="Deleting…"
@@ -298,56 +283,5 @@ export function SettingsView({
 
       <InstallGuideDialog open={installOpen} onOpenChange={setInstallOpen} />
     </>
-  );
-}
-
-const ACCOUNTS_SECTION_ID = "settings-accounts";
-
-type DataRow = {
-  label: string;
-  count: number;
-  icon: React.ComponentType<{ className?: string }>;
-} & ({ href: string; sectionId?: never } | { sectionId: string; href?: never });
-
-/**
- * The "Your data" list. Its own component so it can reach the sheet it sits
- * in (to jump to a section further down this page).
- */
-function DataRows({ rows }: { rows: DataRow[] }) {
-  const sheet = useSheetControls();
-  const rowClass =
-    "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/4 active:bg-white/6";
-
-  return (
-    <Card className="gap-0 overflow-hidden py-1">
-      {rows.map((row, index) => {
-        const content = (
-          <>
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8">
-              <row.icon className="size-4 text-white" />
-            </span>
-            <span className="min-w-0 flex-1 truncate text-sm text-white/80">{row.label}</span>
-            <span className="text-sm font-medium tabular-nums text-white">{row.count}</span>
-            <ChevronRight className="size-4 shrink-0 text-white/30" />
-          </>
-        );
-        const className = cn(rowClass, index !== rows.length - 1 && "border-b border-white/6");
-
-        return row.href ? (
-          <Link key={row.label} href={row.href} className={className}>
-            {content}
-          </Link>
-        ) : (
-          <button
-            key={row.label}
-            type="button"
-            onClick={() => sheet?.reveal(row.sectionId!)}
-            className={className}
-          >
-            {content}
-          </button>
-        );
-      })}
-    </Card>
   );
 }

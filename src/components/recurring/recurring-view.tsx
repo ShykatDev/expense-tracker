@@ -1,6 +1,6 @@
 "use client";
 
-import { Pause, Play, Repeat, Trash2 } from "lucide-react";
+import { ChevronDown, Pause, Play, Repeat, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
@@ -20,7 +20,9 @@ import { Card } from "@/components/ui/card";
 import type { RecurringRuleInput } from "@/hooks/use-recurring";
 import {
   formatDueDate,
+  clampDayOfMonth,
   describeSchedule,
+  ordinal,
   daysFromToday,
   nextOccurrence,
   pendingOccurrences,
@@ -168,6 +170,214 @@ function RecurringRuleCard({
   );
 }
 
+type RuleRow = { rule: RecurringRule; next: ReturnType<typeof nextOccurrence> };
+
+/**
+ * Several rules in the same category (e.g. two rents, or Netflix and
+ * Spotify under one "Subscriptions"), merged into one card: the combined
+ * amount per month, and when the soonest one is due. Tapping it opens the
+ * list of items, each with its own price, schedule and actions.
+ */
+function RecurringCategoryGroupCard({
+  rows,
+  now,
+  onEdit,
+  onTogglePause,
+  onDelete,
+}: {
+  rows: RuleRow[];
+  now: number;
+  onEdit: (rule: RecurringRule) => void;
+  onTogglePause: (rule: RecurringRule) => void;
+  onDelete: (rule: RecurringRule) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const first = rows[0].rule;
+  const income = first.type === "income";
+  const active = rows.filter((row) => !row.rule.paused);
+  const perMonth = active.reduce((sum, row) => sum + monthlyEquivalent(row.rule), 0);
+  // Rows arrive soonest-first, so the first active one is due next.
+  const soonest = active.find((row) => row.next);
+  const daysLeft = soonest?.next ? daysFromToday(soonest.next.dueDate, now) : null;
+  const overdue = daysLeft !== null && daysLeft < 0;
+  const progress =
+    daysLeft === null || !soonest
+      ? 0
+      : overdue
+        ? 1
+        : Math.min(Math.max(1 - daysLeft / cycleDays(soonest.rule), 0.04), 1);
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-4 rounded-3xl bg-white/6 p-4 transition-opacity",
+        active.length === 0 && "opacity-55",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-label={`${first.category}, ${rows.length} items. ${open ? "Hide" : "Show"} items`}
+        className="-m-1 flex items-center gap-3 rounded-2xl p-1 text-left transition-colors active:bg-white/4"
+      >
+        <RecurringCategoryIcon
+          type={first.type}
+          category={first.category}
+          className="size-11 rounded-2xl [&_svg]:size-5"
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-medium text-white">{first.category}</span>
+          <span className="block truncate text-xs text-white/50 tabular-nums">
+            {rows.length} items · {open ? "tap to hide" : "tap to see each"}
+          </span>
+        </span>
+        <span className="shrink-0 text-right">
+          <span
+            className={cn(
+              "block font-display text-lg leading-tight font-semibold tabular-nums",
+              income ? "text-[#dfe8ff]" : "text-white",
+            )}
+          >
+            {income ? "+" : ""}
+            {formatCurrency(perMonth)}
+          </span>
+          <span className="block text-[11px] text-white/40">/month</span>
+        </span>
+        <ChevronDown
+          className={cn("size-4 shrink-0 text-white/40 transition-transform", open && "rotate-180")}
+        />
+      </button>
+
+      {!open && (
+        <div className="flex flex-col gap-1.5">
+          <p
+            className={cn(
+              "truncate text-xs tabular-nums",
+              !soonest ? "text-white/50" : overdue ? "text-amber-300" : "text-white/70",
+            )}
+          >
+            {!soonest || !soonest.next || daysLeft === null
+              ? "All paused"
+              : `Next: ${soonest.rule.note || formatCurrency(soonest.rule.amount)} · ${dueSentence(daysLeft, income).toLowerCase()} · ${formatDueDate(soonest.next.dueDate, now)}`}
+          </p>
+          {soonest && (
+            <ProgressBar value={progress} tone={overdue ? "amber" : income ? "pale" : "blue"} />
+          )}
+        </div>
+      )}
+
+      {/* The items, one row each in a thin divided list (no boxes): name
+          and price on top; when it's due, its bar, and pause / delete below.
+          Tapping the top line edits that item. */}
+      {open && (
+        <ul className="-mx-1 -mb-1 flex flex-col divide-y divide-white/6 border-t border-white/6">
+          {rows.map(({ rule, next }) => {
+            const left = next ? daysFromToday(next.dueDate, now) : null;
+            const late = left !== null && left < 0;
+            const itemProgress =
+              left === null ? 0 : late ? 1 : Math.min(Math.max(1 - left / cycleDays(rule), 0.04), 1);
+            const name = rule.note || shortSchedule(rule);
+            const when = rule.paused
+              ? "Paused"
+              : next && left !== null
+                ? dueSentence(left, income).toLowerCase()
+                : "No upcoming date";
+            return (
+              <li key={rule.id} className="flex flex-col gap-2.5 px-1 py-3.5">
+                <button
+                  type="button"
+                  onClick={() => onEdit(rule)}
+                  aria-label={`Edit ${name}`}
+                  className={cn(
+                    "-m-1 flex items-center gap-3 rounded-xl p-1 text-left transition-colors active:bg-white/4",
+                    rule.paused && "opacity-50",
+                  )}
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm text-white/90">{name}</span>
+                    <span
+                      className={cn(
+                        "block text-xs leading-snug text-pretty tabular-nums",
+                        late && !rule.paused ? "text-amber-300/90" : "text-white/45",
+                      )}
+                    >
+                      {rule.note ? `${shortSchedule(rule)} · ${when}` : when}
+                    </span>
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 text-sm font-medium tabular-nums",
+                      income ? "text-[#dfe8ff]" : "text-white",
+                    )}
+                  >
+                    {income ? "+" : ""}
+                    {formatCurrency(rule.amount)}
+                  </span>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    {rule.paused || !next ? (
+                      <div className="h-1.5 rounded-full bg-white/8" aria-hidden="true" />
+                    ) : (
+                      <ProgressBar
+                        value={itemProgress}
+                        tone={late ? "amber" : income ? "pale" : "blue"}
+                      />
+                    )}
+                  </div>
+                  {/* Same 6px pair spacing as the single-rule card. */}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <RowIconButton
+                      aria-label={rule.paused ? `Resume ${name}` : `Pause ${name}`}
+                      onClick={() => onTogglePause(rule)}
+                      className="bg-white/6"
+                    >
+                      {rule.paused ? <Play /> : <Pause />}
+                    </RowIconButton>
+                    <RowIconButton
+                      aria-label={`Delete ${name}`}
+                      onClick={() => onDelete(rule)}
+                      className="bg-white/6"
+                    >
+                      <Trash2 />
+                    </RowIconButton>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** "Every 1st", "Every Mon", "Yearly · Nov 5": the schedule in a few words. */
+function shortSchedule(rule: RecurringRule) {
+  const start = new Date(rule.startDate);
+  if (rule.frequency === "weekly") {
+    return `Every ${start.toLocaleDateString("en-US", { weekday: "short" })}`;
+  }
+  if (rule.frequency === "yearly") {
+    return `Yearly · ${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  }
+  return `Every ${ordinal(clampDayOfMonth(rule.dayOfMonth))}`;
+}
+
+/** Groups rules by category (case- and space-insensitive), keeping order. */
+function groupByCategory(rows: RuleRow[]) {
+  const groups = new Map<string, RuleRow[]>();
+  for (const row of rows) {
+    const key = row.rule.category.trim().toLowerCase();
+    const list = groups.get(key);
+    if (list) list.push(row);
+    else groups.set(key, [row]);
+  }
+  return [...groups.values()];
+}
+
 /** Last moment of the month containing `now`. */
 function endOfMonth(now: number) {
   const date = new Date(now);
@@ -239,6 +449,17 @@ export function RecurringView() {
       }),
     [rows],
   );
+
+  function openEdit(rule: RecurringRule) {
+    setEditing(rule);
+    setDialogOpen(true);
+    setFormKey((key) => key + 1);
+  }
+
+  function togglePause(rule: RecurringRule) {
+    setPaused(rule.id, !rule.paused);
+    toast.success(rule.paused ? `Resumed ${rule.category}` : `Paused ${rule.category}`);
+  }
 
   function openCreate() {
     setEditing(null);
@@ -330,26 +551,29 @@ export function RecurringView() {
                             ≈ {formatCurrency(group.perMonth)} a month
                           </span>
                         </div>
-                        {group.rows.map(({ rule, next }) => (
-                          <RecurringRuleCard
-                            key={rule.id}
-                            rule={rule}
-                            next={next}
-                            now={now}
-                            onEdit={() => {
-                              setEditing(rule);
-                              setDialogOpen(true);
-                              setFormKey((key) => key + 1);
-                            }}
-                            onTogglePause={() => {
-                              setPaused(rule.id, !rule.paused);
-                              toast.success(
-                                rule.paused ? `Resumed ${rule.category}` : `Paused ${rule.category}`,
-                              );
-                            }}
-                            onDelete={() => handleDelete(rule)}
-                          />
-                        ))}
+                        {/* Rules sharing a category merge into one card. */}
+                        {groupByCategory(group.rows).map((items) =>
+                          items.length > 1 ? (
+                            <RecurringCategoryGroupCard
+                              key={items[0].rule.id}
+                              rows={items}
+                              now={now}
+                              onEdit={openEdit}
+                              onTogglePause={togglePause}
+                              onDelete={handleDelete}
+                            />
+                          ) : (
+                            <RecurringRuleCard
+                              key={items[0].rule.id}
+                              rule={items[0].rule}
+                              next={items[0].next}
+                              now={now}
+                              onEdit={() => openEdit(items[0].rule)}
+                              onTogglePause={() => togglePause(items[0].rule)}
+                              onDelete={() => handleDelete(items[0].rule)}
+                            />
+                          ),
+                        )}
                       </div>
                     ),
                   )}

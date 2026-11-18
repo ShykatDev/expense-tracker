@@ -10,14 +10,18 @@ import { cn } from "@/lib/utils";
 /**
  * Where the money is right now: one chip per account (logo, name, balance)
  * in a row that scrolls sideways. Shown only once there's more than one
- * account — with just Cash it would repeat the savings figure. Tapping a
+ * account — with just Cash it would repeat the savings figure — and leaves
+ * out accounts with a ৳0 balance. Tapping a
  * chip opens Settings, where accounts and transfers are managed.
  */
 export function AccountBalances() {
   const { accounts, balances, hasMultipleAccounts } = useAccounts();
-  if (!hasMultipleAccounts) return null;
+  // Empty accounts (৳0) aren't worth a chip here; they still appear where
+  // they're needed (Settings, the account picker, transfers).
+  const shown = accounts.filter((account) => Math.abs(balances[account.id] ?? 0) >= 0.005);
+  if (!hasMultipleAccounts || shown.length === 0) return null;
 
-  const total = accounts.reduce((sum, account) => sum + (balances[account.id] ?? 0), 0);
+  const total = shown.reduce((sum, account) => sum + (balances[account.id] ?? 0), 0);
 
   return (
     <section className="flex flex-col gap-3">
@@ -35,7 +39,7 @@ export function AccountBalances() {
         aria-label="Account balances"
       >
         <div className="flex w-max gap-2">
-          {accounts.map((account) => {
+          {shown.map((account) => {
             const balance = balances[account.id] ?? 0;
             return (
               <Link

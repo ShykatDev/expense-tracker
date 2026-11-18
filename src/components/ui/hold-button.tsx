@@ -26,6 +26,7 @@ export function HoldButton({
   disabled = false,
   className,
   icon,
+  tone = "rose",
 }: {
   onConfirm: () => void;
   /** The idle label, e.g. "Hold to delete everything". */
@@ -37,6 +38,8 @@ export function HoldButton({
   disabled?: boolean;
   className?: string;
   icon?: React.ReactNode;
+  /** Red for the most destructive action; amber for a lesser one. */
+  tone?: "rose" | "amber";
 }) {
   const fillRef = React.useRef<HTMLSpanElement>(null);
   const frame = React.useRef<number | null>(null);
@@ -109,7 +112,10 @@ export function HoldButton({
       // Long-press would otherwise open the browser's text/context menu.
       onContextMenu={(event) => event.preventDefault()}
       className={cn(
-        "relative flex h-12 w-full touch-none items-center justify-center gap-2 overflow-hidden rounded-full bg-rose-500/15 px-5 text-sm font-medium text-rose-200 ring-1 ring-rose-400/30 select-none [-webkit-touch-callout:none] disabled:opacity-60",
+        "relative flex h-12 w-full touch-none items-center justify-center gap-2 overflow-hidden rounded-full px-5 text-sm font-medium ring-1 select-none [-webkit-touch-callout:none] disabled:opacity-60",
+        tone === "amber"
+          ? "bg-amber-500/15 text-amber-200 ring-amber-400/30"
+          : "bg-rose-500/15 text-rose-200 ring-rose-400/30",
         className,
       )}
     >
@@ -119,9 +125,17 @@ export function HoldButton({
         // Starting scale set inline: a Tailwind scale class uses the CSS
         // `scale` property, which would multiply with this transform.
         style={{ transform: "scaleX(0)" }}
-        className="absolute inset-0 origin-left bg-rose-500"
+        className={cn(
+          "absolute inset-0 origin-left",
+          tone === "amber" ? "bg-amber-500" : "bg-rose-500",
+        )}
       />
-      <span className={cn("relative flex items-center gap-2", holding && "text-white")}>
+      <span
+        className={cn(
+          "relative flex items-center gap-2",
+          holding && (tone === "amber" ? "text-amber-950" : "text-white"),
+        )}
+      >
         {icon}
         {busy ? (busyLabel ?? children) : holding ? holdingLabel : children}
       </span>
