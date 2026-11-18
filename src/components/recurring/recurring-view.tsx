@@ -87,16 +87,18 @@ function RecurringRuleCard({
 
   return (
     <div
-      className={cn(
-        "flex flex-col gap-4 rounded-3xl bg-white/6 p-4 transition-opacity",
-        rule.paused && "opacity-55",
-      )}
+      className="flex flex-col gap-4 rounded-3xl bg-white/6 p-4"
     >
+      {/* A paused rule fades its contents but not its controls, so the
+          (coloured) resume button stays clear. */}
       <button
         type="button"
         onClick={onEdit}
         aria-label={`Edit ${rule.category}`}
-        className="-m-1 flex items-center gap-3 rounded-2xl p-1 text-left transition-colors active:bg-white/4"
+        className={cn(
+          "-m-1 flex items-center gap-3 rounded-2xl p-1 text-left transition-[background-color,opacity] active:bg-white/4",
+          rule.paused && "opacity-55",
+        )}
       >
         <RecurringCategoryIcon
           type={rule.type}
@@ -129,7 +131,7 @@ function RecurringRuleCard({
       </button>
 
       <div className="flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5", rule.paused && "opacity-55")}>
           <p
             className={cn(
               "truncate text-xs tabular-nums",
@@ -153,7 +155,7 @@ function RecurringRuleCard({
           <RowIconButton
             aria-label={rule.paused ? `Resume ${rule.category}` : `Pause ${rule.category}`}
             onClick={onTogglePause}
-            className="bg-white/6"
+            className={rule.paused ? RESUME_BUTTON_CLASS : "bg-white/6"}
           >
             {rule.paused ? <Play /> : <Pause />}
           </RowIconButton>
@@ -208,18 +210,18 @@ function RecurringCategoryGroupCard({
         : Math.min(Math.max(1 - daysLeft / cycleDays(soonest.rule), 0.04), 1);
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 rounded-3xl bg-white/6 p-4 transition-opacity",
-        active.length === 0 && "opacity-55",
-      )}
-    >
+    <div className="flex flex-col gap-4 rounded-3xl bg-white/6 p-4">
+      {/* All paused: the summary fades, but the items' resume buttons in
+          the list below stay at full colour. */}
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-label={`${first.category}, ${rows.length} items. ${open ? "Hide" : "Show"} items`}
-        className="-m-1 flex items-center gap-3 rounded-2xl p-1 text-left transition-colors active:bg-white/4"
+        className={cn(
+          "-m-1 flex items-center gap-3 rounded-2xl p-1 text-left transition-[background-color,opacity] active:bg-white/4",
+          active.length === 0 && "opacity-55",
+        )}
       >
         <RecurringCategoryIcon
           type={first.type}
@@ -228,8 +230,9 @@ function RecurringCategoryGroupCard({
         />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-base font-medium text-white">{first.category}</span>
+          {/* What's inside ("Flat 4B · Garage"); the count is on the toggle. */}
           <span className="block truncate text-xs text-white/50 tabular-nums">
-            {rows.length} items · {open ? "tap to hide" : "tap to see each"}
+            {rows.map((row) => row.rule.note || shortSchedule(row.rule)).join(" · ")}
           </span>
         </span>
         <span className="shrink-0 text-right">
@@ -244,13 +247,18 @@ function RecurringCategoryGroupCard({
           </span>
           <span className="block text-[11px] text-white/40">/month</span>
         </span>
-        <ChevronDown
-          className={cn("size-4 shrink-0 text-white/40 transition-transform", open && "rotate-180")}
-        />
       </button>
 
-      {!open && (
-        <div className="flex flex-col gap-1.5">
+      {/* Footer shaped like a single rule's card: what's due next and its bar
+          on the left; on the right, where single cards have pause / delete,
+          the toggle that opens the list (so the amounts line up). */}
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 flex-col gap-1.5",
+            active.length === 0 && "opacity-55",
+          )}
+        >
           <p
             className={cn(
               "truncate text-xs tabular-nums",
@@ -259,13 +267,27 @@ function RecurringCategoryGroupCard({
           >
             {!soonest || !soonest.next || daysLeft === null
               ? "All paused"
-              : `Next: ${soonest.rule.note || formatCurrency(soonest.rule.amount)} · ${dueSentence(daysLeft, income).toLowerCase()} · ${formatDueDate(soonest.next.dueDate, now)}`}
+              : `Next: ${soonest.rule.note || formatCurrency(soonest.rule.amount)} · ${dueSentence(daysLeft, income).toLowerCase()}`}
           </p>
-          {soonest && (
+          {soonest ? (
             <ProgressBar value={progress} tone={overdue ? "amber" : income ? "pale" : "blue"} />
+          ) : (
+            <div className="h-1.5 rounded-full bg-white/8" aria-hidden="true" />
           )}
         </div>
-      )}
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+          aria-label={open ? "Hide items" : `Show ${rows.length} items`}
+          className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/6 pr-2.5 pl-3 text-xs text-white/75 tabular-nums transition-colors hover:bg-white/10 active:scale-95"
+        >
+          {open ? "Hide" : `${rows.length} items`}
+          <ChevronDown
+            className={cn("size-3.5 transition-transform", open && "rotate-180")}
+          />
+        </button>
+      </div>
 
       {/* The items, one row each in a thin divided list (no boxes): name
           and price on top; when it's due, its bar, and pause / delete below.
@@ -332,7 +354,7 @@ function RecurringCategoryGroupCard({
                     <RowIconButton
                       aria-label={rule.paused ? `Resume ${name}` : `Pause ${name}`}
                       onClick={() => onTogglePause(rule)}
-                      className="bg-white/6"
+                      className={rule.paused ? RESUME_BUTTON_CLASS : "bg-white/6"}
                     >
                       {rule.paused ? <Play /> : <Pause />}
                     </RowIconButton>
@@ -353,6 +375,10 @@ function RecurringCategoryGroupCard({
     </div>
   );
 }
+
+/** Resume on a paused rule: the app's blue, so the way back stands out. */
+const RESUME_BUTTON_CLASS =
+  "bg-[#7fa3ec]/20 text-[#c7d8ff] ring-1 ring-[#7fa3ec]/30 hover:bg-[#7fa3ec]/30 hover:text-white";
 
 /** "Every 1st", "Every Mon", "Yearly · Nov 5": the schedule in a few words. */
 function shortSchedule(rule: RecurringRule) {

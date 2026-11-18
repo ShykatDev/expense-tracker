@@ -269,11 +269,24 @@ export function ExpandableSheet({
       {/* The sheet */}
       <div
         ref={sheetRef}
-        // Top edge: a 1px light border (it follows the rounded corners) and a
-        // faint wash of the hero's blue fading out within ~8rem, so the sheet
-        // reads as lit from above rather than a flat slab.
-        className="absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-[2rem] bg-[radial-gradient(120%_8rem_at_50%_0%,rgba(127,163,236,0.07),transparent),linear-gradient(180deg,#121316_0%,#060607_20rem,#000_100%)] border-t border-white/15 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.8)] will-change-transform"
-        style={{ top: "var(--compact-h, 0px)" }}
+        // Top edge: a 1px border in the hero's blue (it follows the rounded
+        // corners) and a faint blue wash fading out within ~8rem.
+        //
+        // As the sheet is swiped up (--sheet-p 0 → 1) its top turns partly
+        // see-through, so the navy hero glows through it: a blue tint rather
+        // than a flat slab. Only the alpha changes, no backdrop blur — blur on
+        // a moving layer is what made scrolling lag on iPhone. The lower part
+        // stays solid black so content below reads cleanly.
+        className="absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-[2rem] border-t border-[#7fa3ec]/25 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.8)] will-change-transform"
+        style={{
+          top: "var(--compact-h, 0px)",
+          background:
+            "radial-gradient(120% 8rem at 50% 0%, rgba(127,163,236,0.08), transparent), " +
+            "linear-gradient(180deg, " +
+            "rgb(18 19 22 / calc(1 - var(--sheet-p, 0) * 0.45)) 0%, " +
+            "rgb(6 6 7 / calc(1 - var(--sheet-p, 0) * 0.3)) 16rem, " +
+            "#000 28rem)",
+        }}
       >
         <button
           type="button"
