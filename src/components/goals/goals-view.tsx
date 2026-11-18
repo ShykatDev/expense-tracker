@@ -32,6 +32,7 @@ import {
   RowIconButton,
   SheetButton,
   SheetSection,
+  SheetToggle,
 } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -55,7 +56,9 @@ import {
   daysUntil,
   estimateGoalDates,
   formatEstimateDuration,
+  goalHorizon,
   goalPriceDelta,
+  GOAL_HORIZONS,
   goalPriceTimeline,
   isGoalFunded,
   sortGoalsByPriority,
@@ -63,6 +66,7 @@ import {
   type GoalCompletion,
   type GoalCompletionSource,
   type GoalEstimate,
+  type GoalHorizon,
 } from "@/lib/goals";
 import { computeSavings } from "@/lib/savings";
 import { undoToast } from "@/lib/undo-toast";
@@ -100,6 +104,8 @@ export function GoalsView() {
   const [sparkle, setSparkle] = React.useState(0);
   /** Active goals shown as draggable rows to set their priority. */
   const [reordering, setReordering] = React.useState(false);
+  /** Which goals the list shows: everything, one horizon, or completed. */
+  const [filter, setFilter] = React.useState<GoalFilter>("all");
 
   // Savings is measured against the navbar's month, so the goals page and
   // the dashboard always show the same figure.
@@ -147,6 +153,39 @@ export function GoalsView() {
     () => estimateGoalDates(activeRows.map((row) => row.goal), savings, pace),
     [activeRows, savings, pace],
   );
+
+  // Active goals grouped by how far off their estimated date is, keeping
+  // priority order inside each group.
+  const horizonGroups = React.useMemo(
+    () =>
+      GOAL_HORIZONS.map((horizon) => ({
+        ...horizon,
+        rows: activeRows.filter(
+          (row) => goalHorizon(estimates.get(row.goal.id)) === horizon.value,
+        ),
+      })).filter((group) => group.rows.length > 0),
+    [activeRows, estimates],
+  );
+
+  // Every horizon is always offered, so the filters read the same however the
+  // goals fall; "no estimate" goals stay reachable under "all".
+  const filterOptions: { value: GoalFilter; label: string }[] = [
+    { value: "all", label: "all" },
+    ...GOAL_HORIZONS.flatMap((horizon) =>
+      horizon.value === "unknown" ? [] : [{ value: horizon.value, label: horizon.short }],
+    ),
+    ...(doneRows.length > 0 ? [{ value: "done" as const, label: "done" }] : []),
+  ];
+  // A filter emptied by completing or deleting its last goal falls back to all.
+  const activeFilter = filterOptions.some((option) => option.value === filter)
+    ? filter
+    : "all";
+  const showFilters = !showReorder;
+  const visibleGroups =
+    activeFilter === "all"
+      ? horizonGroups
+      : horizonGroups.filter((group) => group.value === activeFilter);
+  const showDone = activeFilter === "all" || activeFilter === "done";
 
   function openCreate() {
     setEditing(null);
@@ -302,29 +341,67 @@ export function GoalsView() {
                     <GoalThumb goal={goal} className="size-full" iconClassName="size-5" />
                   )}
                 />
-              ) : activeRows.length > 0 && (
-                <div className="flex flex-col gap-3">
-                  {activeRows.map((row) => (
-                    <GoalCard
-                      key={row.goal.id}
-                      goal={row.goal}
-                      savings={savings}
-                      funded={row.funded}
-                      progress={row.progress}
-                      estimate={estimates.get(row.goal.id)}
-                      onComplete={() => setCompleting(row.goal)}
-                      onEdit={() => {
-                        setEditing(row.goal);
-                        setDialogOpen(true);
-                        setFormKey((key) => key + 1);
-                      }}
-                      onDelete={() => handleDelete(row.goal)}
-                    />
-                  ))}
-                </div>
-          )}
+              ) : (
+                <>
+                  {showFilters && (
+                    <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      <SheetToggle
+                        label="Filter goals"
+                        compact
+                        value={activeFilter}
+                        options={filterOptions}
+                        onChange={setFilter}
+                        className="w-max"
+                      />
+                    </div>
+                  )}
+                  {activeFilter !== "all" &&
+                    activeFilter !== "done" &&
+                    visibleGroups.length === 0 && (
+                      <Card className="items-center gap-1 px-6 py-8 text-center">
+                        <p className="text-sm font-medium text-white">
+                          No {GOAL_HORIZONS.find((h) => h.value === activeFilter)?.label.toLowerCase()} goals
+                        </p>
+                        <p className="text-xs text-white/50">
+                          Goals you can afford{" "}
+                          {GOAL_HORIZONS.find((h) => h.value === activeFilter)?.hint.toLowerCase()} from
+                          now show up here.
+                        </p>
+                      </Card>
+                    )}
+                  {activeFilter !== "done" &&
+                    visibleGroups.map((group) => (
+                      <div key={group.value} className="flex flex-col gap-3">
+                        <div className="flex items-baseline gap-2 px-1">
+                          <h3 className="text-xs font-medium text-white/70">{group.label}</h3>
+                          <span className="text-xs text-white/40">{group.hint}</span>
+                          <span className="ml-auto text-xs tabular-nums text-white/40">
+                            {group.rows.length}
+                          </span>
+                        </div>
+                        {group.rows.map((row) => (
+                          <GoalCard
+                            key={row.goal.id}
+                            goal={row.goal}
+                            savings={savings}
+                            funded={row.funded}
+                            progress={row.progress}
+                            estimate={estimates.get(row.goal.id)}
+                            onComplete={() => setCompleting(row.goal)}
+                            onEdit={() => {
+                              setEditing(row.goal);
+                              setDialogOpen(true);
+                              setFormKey((key) => key + 1);
+                            }}
+                            onDelete={() => handleDelete(row.goal)}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                </>
+              )}
 
-              {doneRows.length > 0 && (
+              {showDone && doneRows.length > 0 && (
                 <div className="flex flex-col gap-3">
                   <h3 className="px-1 text-xs font-medium text-white/50">Completed</h3>
                   <Card className="gap-0 py-1.5">
@@ -421,6 +498,33 @@ export function GoalsView() {
       />
 
     </>
+  );
+}
+
+type GoalFilter = "all" | Exclude<GoalHorizon, "unknown"> | "done";
+
+/** Each horizon's label colours: green, amber, violet, then sky for next year. */
+const HORIZON_BADGE: Record<GoalHorizon, string> = {
+  short: "bg-emerald-400/12 text-emerald-300/90",
+  mid: "bg-amber-400/12 text-amber-200/90",
+  long: "bg-violet-400/15 text-violet-200/90",
+  "next-year": "bg-sky-400/12 text-sky-200/90",
+  unknown: "bg-white/8 text-white/55",
+};
+
+/** A small pill naming the goal's horizon: short, mid, long term or next year. */
+function HorizonBadge({ horizon }: { horizon: GoalHorizon }) {
+  if (horizon === "unknown") return null;
+  const meta = GOAL_HORIZONS.find((entry) => entry.value === horizon)!;
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2 py-0.5 text-[11px] whitespace-nowrap",
+        HORIZON_BADGE[horizon],
+      )}
+    >
+      {meta.label}
+    </span>
   );
 }
 
@@ -762,7 +866,8 @@ function GoalCard({
               </span>
             )}
           </div>
-          <p className="flex flex-wrap items-center gap-x-2 text-xs tabular-nums text-white/50">
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums text-white/50">
+            <HorizonBadge horizon={goalHorizon(estimate)} />
             <span>{formatCurrency(goal.targetAmount)} goal</span>
             <PriceDeltaBadge delta={goalPriceDelta(goal)} />
           </p>

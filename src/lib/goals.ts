@@ -300,3 +300,39 @@ export function formatEstimateDuration(months: number) {
   const rounded = Math.round(years * 2) / 2;
   return `~${rounded} ${rounded === 1 ? "year" : "years"}`;
 }
+
+/**
+ * How far off a goal is, from its estimated date: short term within two
+ * months, mid term within six, long term within a year, and next year beyond
+ * that. A goal savings already cover is short term. "unknown" when there is
+ * no estimate to go on.
+ */
+export type GoalHorizon = "short" | "mid" | "long" | "next-year" | "unknown";
+
+const SHORT_TERM_MONTHS = 2;
+const MID_TERM_MONTHS = 6;
+const LONG_TERM_MONTHS = 12;
+
+export function goalHorizon(estimate: GoalEstimate | undefined): GoalHorizon {
+  if (!estimate) return "unknown";
+  if (estimate.kind === "ready") return "short";
+  if (estimate.kind !== "eta") return "unknown";
+  if (estimate.months <= SHORT_TERM_MONTHS) return "short";
+  if (estimate.months <= MID_TERM_MONTHS) return "mid";
+  if (estimate.months <= LONG_TERM_MONTHS) return "long";
+  return "next-year";
+}
+
+/** Display order and copy for each horizon. */
+export const GOAL_HORIZONS: {
+  value: GoalHorizon;
+  label: string;
+  short: string;
+  hint: string;
+}[] = [
+  { value: "short", label: "Short term", short: "short", hint: "Within 2 months" },
+  { value: "mid", label: "Mid term", short: "mid", hint: "2–6 months" },
+  { value: "long", label: "Long term", short: "long", hint: "6–12 months" },
+  { value: "next-year", label: "Next year", short: "next year", hint: "12+ months" },
+  { value: "unknown", label: "No estimate yet", short: "unsure", hint: "Needs a saving pace" },
+];
